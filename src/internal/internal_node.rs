@@ -10,8 +10,6 @@ use crate::{
 #[cfg_attr(not(all(doc, not(doctest))), async_trait)]
 pub(crate) trait InternalNode<Error>:
     Node<Box<dyn Any + Send>, NodeOutput<Box<dyn Any + Send>>, Error> + Send
-where
-    Error: Send,
 {
     #[cfg(not(all(doc, not(doctest))))]
     fn duplicate(&self) -> Box<dyn InternalNode<Error>>;
