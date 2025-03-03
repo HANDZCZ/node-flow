@@ -1,0 +1,36 @@
+name: Deploy Docs on GitHub pages
+
+on:
+  push:
+    branches: [ "main" ]
+
+concurrency:
+  group: "gh-pages"
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@nightly
+      - name: Build docs
+        run: cargo +nightly doc --no-deps --all-features
+      - name: Add redirect
+        run: echo '<meta http-equiv="refresh" content="0;url=node_flow/index.html">' > target/doc/index.html
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: target/doc
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
