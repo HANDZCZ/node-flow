@@ -13,3 +13,5 @@
 #![forbid(invalid_doc_attributes)]
 #![cfg_attr(all(doc, not(doctest)), feature(async_fn_in_trait))]
 #![cfg_attr(all(doc, not(doctest)), feature(doc_auto_cfg))]
+
+pub mod storage;
