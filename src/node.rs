@@ -11,3 +11,9 @@ pub trait Node<Input, Output, Error> {
     where
         Input: 'input;
 }
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum NodeOutput<T> {
+    SoftFail,
+    Ok(T),
+}
