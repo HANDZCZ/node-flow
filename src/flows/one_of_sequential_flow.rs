@@ -30,7 +30,7 @@ impl<Input, Output, Error> Node<Input, NodeOutput<Output>, Error>
 where
     Input: Clone + Send,
 {
-    async fn run_with_storage<'a>(
+    async fn run_with_storage(
         &mut self,
         input: Input,
         storage: &mut Storage,

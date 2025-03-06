@@ -54,7 +54,7 @@ where
     NodeError: Into<Error>,
     PreviousNodeOutputType: Into<Input> + Send + 'static,
 {
-    async fn run_with_storage<'input>(
+    async fn run_with_storage(
         &mut self,
         input: Box<dyn Any + Send>,
         storage: &mut Storage,

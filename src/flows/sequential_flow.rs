@@ -82,7 +82,7 @@ where
     Output: Send,
     Error: Send,
 {
-    async fn run_with_storage<'a>(
+    async fn run_with_storage(
         &mut self,
         input: Input,
         storage: &mut Storage,
