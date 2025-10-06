@@ -36,10 +36,16 @@ where
         storage: &mut Storage,
     ) -> Result<NodeOutput<Output>, Error> {
         for mut node in self.nodes.iter().map(|node| node.duplicate()) {
-            let res = node.run_with_storage(input.clone(), storage).await?;
+            let mut next_storage = storage.new_gen();
+            let res = node
+                .run_with_storage(input.clone(), &mut next_storage)
+                .await?;
             match res {
                 NodeOutput::SoftFail => {}
-                NodeOutput::Ok(output) => return Ok(NodeOutput::Ok(output)),
+                NodeOutput::Ok(output) => {
+                    storage.replace(next_storage);
+                    return Ok(NodeOutput::Ok(output));
+                }
             }
         }
         Ok(NodeOutput::SoftFail)
