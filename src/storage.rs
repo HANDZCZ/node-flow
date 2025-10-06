@@ -1,12 +1,14 @@
 use std::{
     any::{Any, TypeId},
-    collections::HashMap,
+    collections::{HashMap, HashSet},
+    sync::Arc,
 };
 
 /// Storage that is used in [`Node`](crate::node::Node).
 #[derive(Default)]
 pub struct Storage {
-    inner: HashMap<TypeId, Box<dyn Any + Send>>,
+    inner: HashMap<TypeId, Arc<dyn Any + Send + Sync>>,
+    changed: HashSet<TypeId>,
 }
 
 impl Storage {
@@ -22,50 +24,49 @@ impl Storage {
     #[must_use]
     pub fn get<T>(&self) -> Option<&T>
     where
-        T: Any + Send,
+        T: Any,
     {
         self.inner.get(&TypeId::of::<T>()).map(|val| {
-            let any_debug_ref: &(dyn Any + Send) = &**val;
-            any_debug_ref.downcast_ref::<T>().unwrap()
+            let any_ref: &(dyn Any + Send + Sync) = Arc::as_ref(val);
+            any_ref.downcast_ref::<T>().unwrap()
         })
     }
 
-    /// Gets mutable reference of a value with type T from storage if it is present.
+    /// Inserts value with type T to storage.
     // should never panic
     #[allow(clippy::missing_panics_doc)]
-    #[must_use]
-    pub fn get_mut<T>(&mut self) -> Option<&mut T>
+    pub fn insert<T>(&mut self, val: T)
     where
-        T: Any + Send,
+        T: Any + Send + Sync,
     {
-        self.inner.get_mut(&TypeId::of::<T>()).map(|val| {
-            let any_debug_ref: &mut (dyn Any + Send) = &mut **val;
-            any_debug_ref.downcast_mut::<T>().unwrap()
-        })
+        let t_typeid = TypeId::of::<T>();
+        self.inner.insert(t_typeid, Arc::new(val));
+        self.changed.insert(t_typeid);
     }
 
-    /// Inserts value with type T to storage and returns the value that was there previously if it was there.
+    /// Removes value with type T from storage if it is present.
     // should never panic
     #[allow(clippy::missing_panics_doc)]
-    pub fn insert<T>(&mut self, val: T) -> Option<T>
+    pub fn remove<T>(&mut self)
     where
-        T: Any + Send,
+        T: 'static,
     {
-        self.inner
-            .insert(TypeId::of::<T>(), Box::new(val))
-            .map(|val: Box<dyn Any + Send>| *val.downcast::<T>().unwrap())
+        let t_typeid = TypeId::of::<T>();
+        if self.inner.remove(&t_typeid).is_some() {
+            self.changed.insert(t_typeid);
+        }
     }
 
-    /// Removes and returns value with type T from storage if it is present.
-    // should never panic
-    #[allow(clippy::missing_panics_doc)]
-    pub fn remove<T>(&mut self) -> Option<T>
-    where
-        T: Any + Send,
-    {
-        self.inner
-            .remove(&TypeId::of::<T>())
-            .map(|val: Box<dyn Any + Send>| *val.downcast::<T>().unwrap())
+    pub(crate) fn new_gen(&self) -> Self {
+        Self {
+            inner: self.inner.clone(),
+            changed: HashSet::new(),
+        }
+    }
+
+    pub(crate) fn replace(&mut self, other: Self) {
+        self.inner = other.inner;
+        self.changed.extend(other.changed.iter());
     }
 }
 
@@ -77,21 +78,16 @@ fn works() {
 
     let mut s = Storage::new();
     s.insert(MyVal("test".into()));
-    //println!("{s:#?}");
     let v = s.get::<MyVal>();
     assert!(v.is_some());
     assert_eq!(v.unwrap().0, "test".to_string());
 
-    let v = s.get_mut::<MyVal>();
-    assert!(v.is_some());
-    assert_eq!(v.as_ref().unwrap().0, "test".to_string());
-    *v.unwrap() = MyVal("hmm".into());
-
-    let v = s.insert(MyVal("jop".into()));
-    assert!(v.is_some());
-    assert_eq!(v.unwrap().0, "hmm".to_string());
-
-    let v = s.remove::<MyVal>();
+    s.insert(MyVal("jop".into()));
+    let v = s.get::<MyVal>();
     assert!(v.is_some());
     assert_eq!(v.unwrap().0, "jop".to_string());
+
+    s.remove::<MyVal>();
+    let v = s.get::<MyVal>();
+    assert!(v.is_none());
 }
