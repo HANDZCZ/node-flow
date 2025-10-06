@@ -1,7 +1,7 @@
 [package]
 name = "node-flow"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 repository = "https://github.com/HANDZCZ/node-flow"
 description = "A crate that provides flows for nodes"
 license = "MIT OR Apache-2.0"
