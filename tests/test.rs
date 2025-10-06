@@ -18,7 +18,7 @@ impl From<StringMatcherError> for String {
 
 #[async_trait]
 impl Node<String, NodeOutput<String>, StringMatcherError> for StringMatcher {
-    async fn run_with_storage<'input>(
+    async fn run_with_storage(
         &mut self,
         input: String,
         _storage: &mut Storage,
@@ -42,7 +42,7 @@ impl From<StringForwarderError> for String {
 
 #[async_trait]
 impl Node<String, String, StringForwarderError> for StringForwarder {
-    async fn run_with_storage<'input>(
+    async fn run_with_storage(
         &mut self,
         input: String,
         _storage: &mut Storage,
@@ -69,7 +69,7 @@ struct StringToWrapString;
 
 #[async_trait]
 impl Node<String, WrapString, String> for StringToWrapString {
-    async fn run_with_storage<'input>(
+    async fn run_with_storage(
         &mut self,
         input: String,
         _storage: &mut Storage,
@@ -84,7 +84,7 @@ struct WrapStringToString;
 
 #[async_trait]
 impl Node<WrapString, String, String> for WrapStringToString {
-    async fn run_with_storage<'input>(
+    async fn run_with_storage(
         &mut self,
         input: WrapString,
         _storage: &mut Storage,
@@ -99,17 +99,13 @@ struct ForwarderT;
 
 #[async_trait]
 impl<T: Send + 'static> Node<T, T, String> for ForwarderT {
-    async fn run_with_storage<'input>(
-        &mut self,
-        input: T,
-        _storage: &mut Storage,
-    ) -> Result<T, String> {
+    async fn run_with_storage(&mut self, input: T, _storage: &mut Storage) -> Result<T, String> {
         Ok(input)
     }
 }
 #[async_trait]
 impl<T: Send + 'static> Node<T, NodeOutput<T>, String> for ForwarderT {
-    async fn run_with_storage<'input>(
+    async fn run_with_storage(
         &mut self,
         input: T,
         _storage: &mut Storage,
