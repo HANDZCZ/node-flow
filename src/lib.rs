@@ -13,6 +13,5 @@
 #![forbid(invalid_doc_attributes)]
 
 pub mod flows;
-mod internal;
 pub mod node;
 pub mod storage;
