@@ -14,8 +14,6 @@
 #![cfg_attr(all(doc, not(doctest)), feature(async_fn_in_trait))]
 #![cfg_attr(all(doc, not(doctest)), feature(doc_auto_cfg))]
 
-pub use async_trait;
-
 pub mod flows;
 mod internal;
 pub mod node;

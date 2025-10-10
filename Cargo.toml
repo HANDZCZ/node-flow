@@ -7,7 +7,6 @@ description = "A crate that provides flows for nodes"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-async-trait = "0.1.87"
 
 [dev-dependencies]
 tokio = { version = "1.43.0", features = ["full"] }
