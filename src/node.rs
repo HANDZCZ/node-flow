@@ -1,13 +1,11 @@
 use crate::storage::Storage;
-use async_trait::async_trait;
 
-#[cfg_attr(not(all(doc, not(doctest))), async_trait)]
 pub trait Node<Input, Output, Error> {
-    async fn run_with_storage(
+    fn run_with_storage(
         &mut self,
         input: Input,
         storage: &mut Storage,
-    ) -> Result<Output, Error>;
+    ) -> impl Future<Output = Result<Output, Error>> + Send;
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -19,7 +17,6 @@ pub enum NodeOutput<T> {
 #[macro_export]
 macro_rules! impl_node_output {
     ($node:ty, $input:ty, $output:ty, $error:ty) => {
-        #[cfg_attr(not(all(doc, not(doctest))), $crate::async_trait::async_trait)]
         impl $crate::node::Node<$input, $crate::node::NodeOutput<$output>, $error> for $node {
             async fn run_with_storage(
                 &mut self,
