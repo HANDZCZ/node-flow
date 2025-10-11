@@ -27,7 +27,6 @@ impl Clone for SomeData {
 
 // SequentialFlow
 
-#[cfg(doc)]
 async fn test_sequential_flow() {
     let mut storage = Storage::new();
 
@@ -68,7 +67,6 @@ async fn test_sequential_flow() {
 
 // OneOfSequentialFlow
 
-#[cfg(doc)]
 async fn test_one_of_sequential_flow() {
     let mut storage = Storage::new();
 
