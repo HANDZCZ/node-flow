@@ -34,11 +34,9 @@ where
         + Clone
         + Send
         + Sync,
-    TailNodeInType: Send,
     TailNodeErrType: Into<Error>,
     TailNodeOutType: Into<Output>,
     Input: Into<TailNodeInType> + Clone + Send,
-    Error: Send,
 {
     async fn run_with_storage(
         &self,
@@ -60,7 +58,7 @@ where
             NodeOutputStruct::Ok(output) => {
                 storage.replace(new_storage);
                 NodeOutputStruct::Ok(output.into())
-            },
+            }
         })
     }
 }
@@ -97,7 +95,7 @@ where
             NodeOutputStruct::Ok(output) => {
                 storage.replace(new_storage);
                 NodeOutputStruct::Ok(output.into())
-            },
+            }
         })
     }
 }
