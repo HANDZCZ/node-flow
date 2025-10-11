@@ -49,14 +49,18 @@ where
         if let NodeOutputStruct::Ok(res) = head.run_with_storage(input.clone(), storage).await? {
             return Ok(NodeOutputStruct::Ok(res));
         }
+        let mut new_storage = storage.new_gen();
         let output = tail
             .clone()
-            .run_with_storage(input.into(), storage)
+            .run_with_storage(input.into(), &mut new_storage)
             .await
             .map_err(Into::into)?;
         Ok(match output {
             NodeOutputStruct::SoftFail => NodeOutputStruct::SoftFail,
-            NodeOutputStruct::Ok(output) => NodeOutputStruct::Ok(output.into()),
+            NodeOutputStruct::Ok(output) => {
+                storage.replace(new_storage);
+                NodeOutputStruct::Ok(output.into())
+            },
         })
     }
 }
@@ -81,15 +85,19 @@ where
         input: Input,
         storage: &mut Storage,
     ) -> NodeResult<Output, Error> {
+        let mut new_storage = storage.new_gen();
         let output = self
             .0
             .clone()
-            .run_with_storage(input.into(), storage)
+            .run_with_storage(input.into(), &mut new_storage)
             .await
             .map_err(Into::into)?;
         Ok(match output {
             NodeOutputStruct::SoftFail => NodeOutputStruct::SoftFail,
-            NodeOutputStruct::Ok(output) => NodeOutputStruct::Ok(output.into()),
+            NodeOutputStruct::Ok(output) => {
+                storage.replace(new_storage);
+                NodeOutputStruct::Ok(output.into())
+            },
         })
     }
 }

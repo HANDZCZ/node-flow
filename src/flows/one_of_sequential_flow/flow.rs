@@ -124,4 +124,49 @@ mod test {
         let res = Future::poll(fut.as_mut(), &mut ctx);
         assert_eq!(res, Poll::Ready(Result::Ok(NodeOutput::Ok(5))));
     }
+
+    #[derive(Clone)]
+    struct InsertIntoStorageAssertWasNotInStorage<I, O, E, T>(PhantomData<(I, O, E, T)>);
+
+    impl<I, O, E, T> InsertIntoStorageAssertWasNotInStorage<I, O, E, T> {
+        fn new() -> Self {
+            Self(PhantomData)
+        }
+    }
+    impl<I, O, E, T> Node<I, NodeOutput<O>, E> for InsertIntoStorageAssertWasNotInStorage<I, O, E, T>
+    where
+        I: Into<O> + Send,
+        O: Send,
+        E: Send,
+        T: Default + Clone + Send + 'static,
+    {
+        async fn run_with_storage(
+            &mut self,
+            _input: I,
+            storage: &mut Storage,
+        ) -> Result<NodeOutput<O>, E> {
+            assert!(
+                storage.insert(T::default()).is_none(),
+                "{} was in storage",
+                std::any::type_name::<T>()
+            );
+            Ok(NodeOutput::SoftFail)
+        }
+    }
+
+    #[test]
+    fn test_flow_storage() {
+        let mut st = Storage::new();
+        let mut flow = OneOfSequentialFlow::<u8, u64, ()>::builder()
+            .add_node(InsertIntoStorageAssertWasNotInStorage::<u16, u32, (), String>::new())
+            .add_node(InsertIntoStorageAssertWasNotInStorage::<u8, u16, (), String>::new())
+            .add_node(InsertIntoStorageAssertWasNotInStorage::<u32, u64, (), String>::new())
+            .add_node(Passer::<u16, u32, ()>::new())
+            .build();
+        let fut = flow.run_with_storage(5, &mut st);
+
+        let mut ctx = std::task::Context::from_waker(std::task::Waker::noop());
+        let res = Future::poll(Box::pin(fut).as_mut(), &mut ctx);
+        assert_eq!(res, Poll::Ready(Result::Ok(NodeOutput::Ok(5))));
+    }
 }
