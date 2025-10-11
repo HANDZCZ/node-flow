@@ -14,7 +14,11 @@ pub struct OneOfSequentialFlow<Input, Output, Error, NodeTypes = (), NodeIOEType
     pub(super) nodes: Arc<NodeTypes>,
 }
 
-impl<Input, Output, Error> OneOfSequentialFlow<Input, Output, Error> {
+impl<Input, Output, Error> OneOfSequentialFlow<Input, Output, Error>
+where
+    // Trait bounds for better and nicer errors
+    Input: Send + Clone,
+{
     #[must_use]
     pub fn builder() -> OneOfSequentialFlowBuilder<Input, Output, Error> {
         OneOfSequentialFlowBuilder::new()
@@ -25,6 +29,8 @@ impl<Input, Output, Error, NodeTypes, NodeIOETypes> Node<Input, NodeOutputStruct
     for OneOfSequentialFlow<Input, Output, Error, NodeTypes, NodeIOETypes>
 where
     NodeTypes: ChainRunOneOfSequential<Input, NodeResult<Output, Error>, NodeIOETypes>,
+    // Trait bounds for better and nicer errors
+    Input: Send + Clone,
 {
     fn run_with_storage(
         &mut self,
