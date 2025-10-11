@@ -5,19 +5,34 @@ use crate::{
     node::{Node, NodeOutput as NodeOutputStruct},
 };
 
-pub struct SequentialFlowBuilder<Input, Output, Error, NodeTypes = (), NodeIOETypes = ()> {
+pub struct SequentialFlowBuilder<Input, Output, Error, NodeTypes = (), NodeIOETypes = ()>
+where
+    // Trait bounds for better and nicer errors
+    Input: Send,
+    Error: Send,
+{
     _ioe: PhantomData<(Input, Output, Error)>,
     _nodes_io: PhantomData<NodeIOETypes>,
     nodes: NodeTypes,
 }
 
-impl<Input, Output, Error> Default for SequentialFlowBuilder<Input, Output, Error> {
+impl<Input, Output, Error> Default for SequentialFlowBuilder<Input, Output, Error>
+where
+    // Trait bounds for better and nicer errors
+    Input: Send,
+    Error: Send,
+{
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<Input, Output, Error> SequentialFlowBuilder<Input, Output, Error> {
+impl<Input, Output, Error> SequentialFlowBuilder<Input, Output, Error>
+where
+    // Trait bounds for better and nicer errors
+    Input: Send,
+    Error: Send,
+{
     #[must_use]
     pub fn new() -> Self {
         Self {
@@ -41,7 +56,9 @@ impl<Input, Output, Error> SequentialFlowBuilder<Input, Output, Error> {
     where
         Input: Into<NodeInput>,
         NodeError: Into<Error>,
-        NodeType: Node<NodeInput, NodeOutputStruct<NodeOutput>, NodeError> + Clone,
+        NodeType: Node<NodeInput, NodeOutputStruct<NodeOutput>, NodeError>,
+        // Trait bounds for better and nicer errors
+        NodeType: Clone + Send + Sync,
     {
         SequentialFlowBuilder {
             _ioe: PhantomData,
@@ -68,6 +85,10 @@ impl<
         NodeTypes,
         ChainLink<OtherNodeIOETypes, NodeIOE<LastNodeInType, LastNodeOutType, LastNodeErrType>>,
     >
+where
+    // Trait bounds for better and nicer errors
+    Input: Send,
+    Error: Send,
 {
     #[allow(clippy::type_complexity)]
     pub fn add_node<NodeType, NodeInput, NodeOutput, NodeError>(
@@ -86,7 +107,9 @@ impl<
     where
         LastNodeOutType: Into<NodeInput>,
         NodeError: Into<Error>,
-        NodeType: Node<NodeInput, NodeOutputStruct<NodeOutput>, NodeError> + Clone,
+        NodeType: Node<NodeInput, NodeOutputStruct<NodeOutput>, NodeError>,
+        // Trait bounds for better and nicer errors
+        NodeType: Clone + Send + Sync,
     {
         SequentialFlowBuilder {
             _ioe: PhantomData,

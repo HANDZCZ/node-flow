@@ -11,7 +11,12 @@ pub struct SequentialFlow<Input, Output, Error, NodeTypes = (), NodeIOETypes = (
     pub(super) nodes: Arc<NodeTypes>,
 }
 
-impl<Input, Output, Error> SequentialFlow<Input, Output, Error> {
+impl<Input, Output, Error> SequentialFlow<Input, Output, Error>
+where
+    // Trait bounds for better and nicer errors
+    Input: Send,
+    Error: Send,
+{
     #[must_use]
     pub fn builder() -> SequentialFlowBuilder<Input, Output, Error> {
         SequentialFlowBuilder::new()
