@@ -39,37 +39,17 @@ where
 
 #[cfg(test)]
 mod test {
-    use std::{marker::PhantomData, pin::Pin, task::Poll};
+    use std::task::Poll;
 
     use crate::{
-        flows::{SequentialFlow, sequential_flow::chain_run::ChainRunSequential},
+        flows::{
+            SequentialFlow,
+            sequential_flow::chain_run::ChainRunSequential,
+            tests::{Passer, poll_once},
+        },
         node::{Node, NodeOutput},
         storage::Storage,
     };
-
-    #[derive(Clone)]
-    struct Passer<I, O, E>(PhantomData<(I, O, E)>);
-
-    impl<I, O, E> Passer<I, O, E> {
-        fn new() -> Self {
-            Self(PhantomData)
-        }
-    }
-
-    impl<I, O, E> Node<I, NodeOutput<O>, E> for Passer<I, O, E>
-    where
-        I: Into<O> + Send,
-        O: Send,
-        E: Send,
-    {
-        async fn run_with_storage(
-            &mut self,
-            input: I,
-            _storage: &mut Storage,
-        ) -> Result<NodeOutput<O>, E> {
-            Ok(NodeOutput::Ok(input.into()))
-        }
-    }
 
     #[test]
     fn test_flow() {
@@ -80,8 +60,7 @@ mod test {
             .build();
         let fut = flow.run_with_storage(true, &mut st);
 
-        let mut ctx = std::task::Context::from_waker(std::task::Waker::noop());
-        let res = Future::poll(Box::pin(fut).as_mut(), &mut ctx);
+        let res = poll_once(fut);
         assert_eq!(res, Poll::Ready(Result::Ok(NodeOutput::Ok(1))));
     }
 
@@ -95,10 +74,10 @@ mod test {
             ),
             Passer::<u64, u128, ()>::new(),
         );
-        let mut fut: Pin<Box<dyn Future<Output = Result<NodeOutput<u128>, ()>>>> =
-            Box::pin(node.run_with_storage(true, &mut st));
-        let mut ctx = std::task::Context::from_waker(std::task::Waker::noop());
-        let res = Future::poll(fut.as_mut(), &mut ctx);
+        let fut = ChainRunSequential::<_, Result<NodeOutput<u128>, ()>, _>::run_with_storage(
+            &node, true, &mut st,
+        );
+        let res = poll_once(fut);
         assert_eq!(res, Poll::Ready(Result::Ok(NodeOutput::Ok(1))));
     }
 }

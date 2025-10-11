@@ -7,3 +7,6 @@ use crate::node::NodeOutput;
 type NodeIOE<Input, Output, Error> = (Input, NodeOutput<Output>, Error);
 type ChainLink<Head, Tail> = (Head, Tail);
 type NodeResult<Output, Error> = Result<NodeOutput<Output>, Error>;
+
+#[cfg(test)]
+mod tests;

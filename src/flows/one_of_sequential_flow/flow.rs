@@ -43,60 +43,17 @@ where
 
 #[cfg(test)]
 mod test {
-    use std::{marker::PhantomData, pin::Pin, task::Poll};
+    use std::task::Poll;
 
     use crate::{
-        flows::{OneOfSequentialFlow, one_of_sequential_flow::chain_run::ChainRunOneOfSequential},
+        flows::{
+            OneOfSequentialFlow,
+            one_of_sequential_flow::chain_run::ChainRunOneOfSequential,
+            tests::{InsertIntoStorageAssertWasNotInStorage, Passer, SoftFailNode, poll_once},
+        },
         node::{Node, NodeOutput},
         storage::Storage,
     };
-
-    #[derive(Clone)]
-    struct Passer<I, O, E>(PhantomData<(I, O, E)>);
-
-    impl<I, O, E> Passer<I, O, E> {
-        fn new() -> Self {
-            Self(PhantomData)
-        }
-    }
-
-    impl<I, O, E> Node<I, NodeOutput<O>, E> for Passer<I, O, E>
-    where
-        I: Into<O> + Send,
-        O: Send,
-        E: Send,
-    {
-        async fn run_with_storage(
-            &mut self,
-            input: I,
-            _storage: &mut Storage,
-        ) -> Result<NodeOutput<O>, E> {
-            Ok(NodeOutput::Ok(input.into()))
-        }
-    }
-
-    #[derive(Clone)]
-    struct SoftFailNode<I, O, E>(PhantomData<(I, O, E)>);
-
-    impl<I, O, E> SoftFailNode<I, O, E> {
-        fn new() -> Self {
-            Self(PhantomData)
-        }
-    }
-    impl<I, O, E> Node<I, NodeOutput<O>, E> for SoftFailNode<I, O, E>
-    where
-        I: Into<O> + Send,
-        O: Send,
-        E: Send,
-    {
-        async fn run_with_storage(
-            &mut self,
-            _input: I,
-            _storage: &mut Storage,
-        ) -> Result<NodeOutput<O>, E> {
-            Ok(NodeOutput::SoftFail)
-        }
-    }
 
     #[test]
     fn test_flow() {
@@ -109,8 +66,7 @@ mod test {
             .build();
         let fut = flow.run_with_storage(5, &mut st);
 
-        let mut ctx = std::task::Context::from_waker(std::task::Waker::noop());
-        let res = Future::poll(Box::pin(fut).as_mut(), &mut ctx);
+        let res = poll_once(fut);
         assert_eq!(res, Poll::Ready(Result::Ok(NodeOutput::Ok(5))));
     }
 
@@ -124,40 +80,11 @@ mod test {
             ),
             Passer::<u16, u32, ()>::new(),
         );
-        let mut fut: Pin<Box<dyn Future<Output = Result<NodeOutput<u64>, ()>>>> =
-            Box::pin(node.run_with_storage(5u8, &mut st));
-        let mut ctx = std::task::Context::from_waker(std::task::Waker::noop());
-        let res = Future::poll(fut.as_mut(), &mut ctx);
+        let fut = ChainRunOneOfSequential::<_, Result<NodeOutput<u64>, ()>, _>::run_with_storage(
+            &node, 5u8, &mut st,
+        );
+        let res = poll_once(fut);
         assert_eq!(res, Poll::Ready(Result::Ok(NodeOutput::Ok(5))));
-    }
-
-    #[derive(Clone)]
-    struct InsertIntoStorageAssertWasNotInStorage<I, O, E, T>(PhantomData<(I, O, E, T)>);
-
-    impl<I, O, E, T> InsertIntoStorageAssertWasNotInStorage<I, O, E, T> {
-        fn new() -> Self {
-            Self(PhantomData)
-        }
-    }
-    impl<I, O, E, T> Node<I, NodeOutput<O>, E> for InsertIntoStorageAssertWasNotInStorage<I, O, E, T>
-    where
-        I: Into<O> + Send,
-        O: Send,
-        E: Send,
-        T: Default + Clone + Send + 'static,
-    {
-        async fn run_with_storage(
-            &mut self,
-            _input: I,
-            storage: &mut Storage,
-        ) -> Result<NodeOutput<O>, E> {
-            assert!(
-                storage.insert(T::default()).is_none(),
-                "{} was in storage",
-                std::any::type_name::<T>()
-            );
-            Ok(NodeOutput::SoftFail)
-        }
     }
 
     #[test]
@@ -171,8 +98,7 @@ mod test {
             .build();
         let fut = flow.run_with_storage(5, &mut st);
 
-        let mut ctx = std::task::Context::from_waker(std::task::Waker::noop());
-        let res = Future::poll(Box::pin(fut).as_mut(), &mut ctx);
+        let res = poll_once(fut);
         assert_eq!(res, Poll::Ready(Result::Ok(NodeOutput::Ok(5))));
     }
 }
