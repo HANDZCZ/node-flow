@@ -7,7 +7,6 @@
 #![warn(rustdoc::private_intra_doc_links)]
 #![warn(clippy::empty_line_after_doc_comments)]
 #![warn(clippy::pedantic)]
-#![allow(clippy::module_name_repetitions)]
 #![forbid(rustdoc::broken_intra_doc_links)]
 //#![forbid(missing_debug_implementations)]
 #![forbid(invalid_doc_attributes)]
