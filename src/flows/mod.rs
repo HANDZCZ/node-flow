@@ -1,7 +1,7 @@
-mod sequential_flow;
-pub use sequential_flow::*;
-mod one_of_sequential_flow;
-pub use one_of_sequential_flow::*;
+pub mod sequential_flow;
+pub use sequential_flow::SequentialFlow;
+pub mod one_of_sequential_flow;
+pub use one_of_sequential_flow::OneOfSequentialFlow;
 
 use crate::node::NodeOutput;
 type NodeIOE<Input, Output, Error> = (Input, NodeOutput<Output>, Error);

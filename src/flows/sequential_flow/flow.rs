@@ -1,5 +1,6 @@
+use super::{Builder, chain_run::ChainRunSequential as ChainRun};
 use crate::{
-    flows::{NodeResult, SequentialFlowBuilder, sequential_flow::chain_run::ChainRunSequential},
+    flows::NodeResult,
     node::{Node, NodeOutput as NodeOutputStruct},
     storage::Storage,
 };
@@ -18,15 +19,15 @@ where
     Error: Send,
 {
     #[must_use]
-    pub fn builder() -> SequentialFlowBuilder<Input, Output, Error> {
-        SequentialFlowBuilder::new()
+    pub fn builder() -> Builder<Input, Output, Error> {
+        Builder::new()
     }
 }
 
 impl<Input, Output, Error, NodeTypes, NodeIOETypes> Node<Input, NodeOutputStruct<Output>, Error>
     for SequentialFlow<Input, Output, Error, NodeTypes, NodeIOETypes>
 where
-    NodeTypes: ChainRunSequential<Input, NodeResult<Output, Error>, NodeIOETypes>,
+    NodeTypes: ChainRun<Input, NodeResult<Output, Error>, NodeIOETypes>,
 {
     fn run_with_storage(
         &mut self,
@@ -41,12 +42,9 @@ where
 mod test {
     use std::task::Poll;
 
+    use super::{ChainRun, SequentialFlow as Flow};
     use crate::{
-        flows::{
-            SequentialFlow,
-            sequential_flow::chain_run::ChainRunSequential,
-            tests::{Passer, poll_once},
-        },
+        flows::tests::{Passer, poll_once},
         node::{Node, NodeOutput},
         storage::Storage,
     };
@@ -54,7 +52,7 @@ mod test {
     #[test]
     fn test_flow() {
         let mut st = Storage::new();
-        let mut flow = SequentialFlow::<bool, u128, ()>::builder()
+        let mut flow = Flow::<bool, u128, ()>::builder()
             .add_node(Passer::<u8, u16, ()>::new())
             .add_node(Passer::<u32, u64, ()>::new())
             .build();
@@ -74,9 +72,8 @@ mod test {
             ),
             Passer::<u64, u128, ()>::new(),
         );
-        let fut = ChainRunSequential::<_, Result<NodeOutput<u128>, ()>, _>::run_with_storage(
-            &node, true, &mut st,
-        );
+        let fut =
+            ChainRun::<_, Result<NodeOutput<u128>, ()>, _>::run_with_storage(&node, true, &mut st);
         let res = poll_once(fut);
         assert_eq!(res, Poll::Ready(Result::Ok(NodeOutput::Ok(1))));
     }

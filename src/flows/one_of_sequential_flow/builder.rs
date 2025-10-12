@@ -1,11 +1,12 @@
 use std::{marker::PhantomData, sync::Arc};
 
+use super::OneOfSequentialFlow as Flow;
 use crate::{
-    flows::{ChainLink, NodeIOE, OneOfSequentialFlow},
+    flows::{ChainLink, NodeIOE},
     node::{Node, NodeOutput as NodeOutputStruct},
 };
 
-pub struct OneOfSequentialFlowBuilder<Input, Output, Error, NodeTypes = (), NodeIOETypes = ()>
+pub struct Builder<Input, Output, Error, NodeTypes = (), NodeIOETypes = ()>
 where
     // Trait bounds for better and nicer errors
     Input: Send + Clone,
@@ -15,7 +16,7 @@ where
     nodes: NodeTypes,
 }
 
-impl<Input, Output, Error> Default for OneOfSequentialFlowBuilder<Input, Output, Error>
+impl<Input, Output, Error> Default for Builder<Input, Output, Error>
 where
     // Trait bounds for better and nicer errors
     Input: Send + Clone,
@@ -25,7 +26,7 @@ where
     }
 }
 
-impl<Input, Output, Error> OneOfSequentialFlowBuilder<Input, Output, Error>
+impl<Input, Output, Error> Builder<Input, Output, Error>
 where
     // Trait bounds for better and nicer errors
     Input: Send + Clone,
@@ -43,7 +44,7 @@ where
     pub fn add_node<NodeType, NodeInput, NodeOutput, NodeError>(
         self,
         node: NodeType,
-    ) -> OneOfSequentialFlowBuilder<
+    ) -> Builder<
         Input,
         Output,
         Error,
@@ -58,7 +59,7 @@ where
         // Trait bounds for better and nicer errors
         NodeType: Clone + Send + Sync,
     {
-        OneOfSequentialFlowBuilder {
+        Builder {
             _ioe: PhantomData,
             _nodes_io: PhantomData,
             nodes: (node,),
@@ -67,13 +68,7 @@ where
 }
 
 impl<Input, Output, Error, NodeTypes, LastNodeIOETypes, OtherNodeIOETypes>
-    OneOfSequentialFlowBuilder<
-        Input,
-        Output,
-        Error,
-        NodeTypes,
-        ChainLink<OtherNodeIOETypes, LastNodeIOETypes>,
-    >
+    Builder<Input, Output, Error, NodeTypes, ChainLink<OtherNodeIOETypes, LastNodeIOETypes>>
 where
     // Trait bounds for better and nicer errors
     Input: Send + Clone,
@@ -82,7 +77,7 @@ where
     pub fn add_node<NodeType, NodeInput, NodeOutput, NodeError>(
         self,
         node: NodeType,
-    ) -> OneOfSequentialFlowBuilder<
+    ) -> Builder<
         Input,
         Output,
         Error,
@@ -100,7 +95,7 @@ where
         // Trait bounds for better and nicer errors
         NodeType: Clone + Send + Sync,
     {
-        OneOfSequentialFlowBuilder {
+        Builder {
             _ioe: PhantomData,
             _nodes_io: PhantomData,
             nodes: (self.nodes, node),
@@ -109,14 +104,8 @@ where
 
     pub fn build(
         self,
-    ) -> OneOfSequentialFlow<
-        Input,
-        Output,
-        Error,
-        NodeTypes,
-        ChainLink<OtherNodeIOETypes, LastNodeIOETypes>,
-    > {
-        OneOfSequentialFlow {
+    ) -> Flow<Input, Output, Error, NodeTypes, ChainLink<OtherNodeIOETypes, LastNodeIOETypes>> {
+        Flow {
             _ioe: PhantomData,
             _nodes_io: PhantomData,
             nodes: Arc::new(self.nodes),

@@ -1,11 +1,12 @@
 use std::{marker::PhantomData, sync::Arc};
 
+use super::SequentialFlow as Flow;
 use crate::{
-    flows::{ChainLink, NodeIOE, SequentialFlow},
+    flows::{ChainLink, NodeIOE},
     node::{Node, NodeOutput as NodeOutputStruct},
 };
 
-pub struct SequentialFlowBuilder<Input, Output, Error, NodeTypes = (), NodeIOETypes = ()>
+pub struct Builder<Input, Output, Error, NodeTypes = (), NodeIOETypes = ()>
 where
     // Trait bounds for better and nicer errors
     Input: Send,
@@ -16,7 +17,7 @@ where
     nodes: NodeTypes,
 }
 
-impl<Input, Output, Error> Default for SequentialFlowBuilder<Input, Output, Error>
+impl<Input, Output, Error> Default for Builder<Input, Output, Error>
 where
     // Trait bounds for better and nicer errors
     Input: Send,
@@ -27,7 +28,7 @@ where
     }
 }
 
-impl<Input, Output, Error> SequentialFlowBuilder<Input, Output, Error>
+impl<Input, Output, Error> Builder<Input, Output, Error>
 where
     // Trait bounds for better and nicer errors
     Input: Send,
@@ -46,7 +47,7 @@ where
     pub fn add_node<NodeType, NodeInput, NodeOutput, NodeError>(
         self,
         node: NodeType,
-    ) -> SequentialFlowBuilder<
+    ) -> Builder<
         Input,
         Output,
         Error,
@@ -60,7 +61,7 @@ where
         // Trait bounds for better and nicer errors
         NodeType: Clone + Send + Sync,
     {
-        SequentialFlowBuilder {
+        Builder {
             _ioe: PhantomData,
             _nodes_io: PhantomData,
             nodes: (node,),
@@ -78,7 +79,7 @@ impl<
     LastNodeErrType,
     OtherNodeIOETypes,
 >
-    SequentialFlowBuilder<
+    Builder<
         Input,
         Output,
         Error,
@@ -94,7 +95,7 @@ where
     pub fn add_node<NodeType, NodeInput, NodeOutput, NodeError>(
         self,
         node: NodeType,
-    ) -> SequentialFlowBuilder<
+    ) -> Builder<
         Input,
         Output,
         Error,
@@ -111,7 +112,7 @@ where
         // Trait bounds for better and nicer errors
         NodeType: Clone + Send + Sync,
     {
-        SequentialFlowBuilder {
+        Builder {
             _ioe: PhantomData,
             _nodes_io: PhantomData,
             nodes: (self.nodes, node),
@@ -121,7 +122,7 @@ where
     #[allow(clippy::type_complexity)]
     pub fn build(
         self,
-    ) -> SequentialFlow<
+    ) -> Flow<
         Input,
         Output,
         Error,
@@ -131,7 +132,7 @@ where
     where
         LastNodeOutType: Into<Output>,
     {
-        SequentialFlow {
+        Flow {
             _ioe: PhantomData,
             _nodes_io: PhantomData,
             nodes: Arc::new(self.nodes),

@@ -1,8 +1,6 @@
+use super::{Builder, chain_run::ChainRunOneOfSequential as ChainRun};
 use crate::{
-    flows::{
-        NodeResult, OneOfSequentialFlowBuilder,
-        one_of_sequential_flow::chain_run::ChainRunOneOfSequential,
-    },
+    flows::NodeResult,
     node::{Node, NodeOutput as NodeOutputStruct},
     storage::Storage,
 };
@@ -20,17 +18,15 @@ where
     Input: Send + Clone,
 {
     #[must_use]
-    pub fn builder() -> OneOfSequentialFlowBuilder<Input, Output, Error> {
-        OneOfSequentialFlowBuilder::new()
+    pub fn builder() -> Builder<Input, Output, Error> {
+        Builder::new()
     }
 }
 
 impl<Input, Output, Error, NodeTypes, NodeIOETypes> Node<Input, NodeOutputStruct<Output>, Error>
     for OneOfSequentialFlow<Input, Output, Error, NodeTypes, NodeIOETypes>
 where
-    NodeTypes: ChainRunOneOfSequential<Input, NodeResult<Output, Error>, NodeIOETypes>,
-    // Trait bounds for better and nicer errors
-    Input: Send + Clone,
+    NodeTypes: ChainRun<Input, NodeResult<Output, Error>, NodeIOETypes>,
 {
     fn run_with_storage(
         &mut self,
@@ -45,12 +41,9 @@ where
 mod test {
     use std::task::Poll;
 
+    use super::{ChainRun, OneOfSequentialFlow as Flow};
     use crate::{
-        flows::{
-            OneOfSequentialFlow,
-            one_of_sequential_flow::chain_run::ChainRunOneOfSequential,
-            tests::{InsertIntoStorageAssertWasNotInStorage, Passer, SoftFailNode, poll_once},
-        },
+        flows::tests::{InsertIntoStorageAssertWasNotInStorage, Passer, SoftFailNode, poll_once},
         node::{Node, NodeOutput},
         storage::Storage,
     };
@@ -58,7 +51,7 @@ mod test {
     #[test]
     fn test_flow() {
         let mut st = Storage::new();
-        let mut flow = OneOfSequentialFlow::<u8, u64, ()>::builder()
+        let mut flow = Flow::<u8, u64, ()>::builder()
             .add_node(SoftFailNode::<u16, u32, ()>::new())
             .add_node(SoftFailNode::<u8, u16, ()>::new())
             .add_node(SoftFailNode::<u32, u64, ()>::new())
@@ -80,9 +73,8 @@ mod test {
             ),
             Passer::<u16, u32, ()>::new(),
         );
-        let fut = ChainRunOneOfSequential::<_, Result<NodeOutput<u64>, ()>, _>::run_with_storage(
-            &node, 5u8, &mut st,
-        );
+        let fut =
+            ChainRun::<_, Result<NodeOutput<u64>, ()>, _>::run_with_storage(&node, 5u8, &mut st);
         let res = poll_once(fut);
         assert_eq!(res, Poll::Ready(Result::Ok(NodeOutput::Ok(5))));
     }
@@ -90,7 +82,7 @@ mod test {
     #[test]
     fn test_flow_storage() {
         let mut st = Storage::new();
-        let mut flow = OneOfSequentialFlow::<u8, u64, ()>::builder()
+        let mut flow = Flow::<u8, u64, ()>::builder()
             .add_node(InsertIntoStorageAssertWasNotInStorage::<u16, u32, (), String>::new())
             .add_node(InsertIntoStorageAssertWasNotInStorage::<u8, u16, (), String>::new())
             .add_node(InsertIntoStorageAssertWasNotInStorage::<u32, u64, (), String>::new())
