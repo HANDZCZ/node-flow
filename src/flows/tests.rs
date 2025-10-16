@@ -1,17 +1,9 @@
-use std::{marker::PhantomData, task::Poll};
+use std::marker::PhantomData;
 
 use crate::{
     node::{Node, NodeOutput},
     storage::Storage,
 };
-
-pub fn poll_once<Fut, Output>(fut: Fut) -> Poll<Output>
-where
-    Fut: Future<Output = Output>,
-{
-    let mut ctx = std::task::Context::from_waker(std::task::Waker::noop());
-    Future::poll(Box::pin(fut).as_mut(), &mut ctx)
-}
 
 #[derive(Clone)]
 pub struct Passer<I, O, E>(PhantomData<(I, O, E)>);
@@ -33,6 +25,7 @@ where
         input: I,
         _storage: &mut Storage,
     ) -> Result<NodeOutput<O>, E> {
+        tokio::time::sleep(tokio::time::Duration::from_millis(150)).await;
         Ok(NodeOutput::Ok(input.into()))
     }
 }
@@ -56,6 +49,7 @@ where
         _input: I,
         _storage: &mut Storage,
     ) -> Result<NodeOutput<O>, E> {
+        tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
         Ok(NodeOutput::SoftFail)
     }
 }
