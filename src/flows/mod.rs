@@ -1,3 +1,4 @@
+mod generic_defs;
 pub mod sequential_flow;
 pub use sequential_flow::SequentialFlow;
 pub mod one_of_sequential_flow;
