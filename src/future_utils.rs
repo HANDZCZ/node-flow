@@ -37,7 +37,7 @@ where
         }
     }
 
-    pub fn take_unchecked(mut self: Pin<&mut Self>) -> T::Output {
+    pub fn take_output(mut self: Pin<&mut Self>) -> T::Output {
         match &*self {
             MaybeReady::Pending(_) => panic!("Future is pending"),
             MaybeReady::Taken => panic!("Result was already taken"),

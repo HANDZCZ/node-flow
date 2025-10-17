@@ -25,19 +25,23 @@ where
             SoftFailPoll::SoftFail => false,
         };
 
-        if tail.is_taken() && !head_pending {
-            return SoftFailPoll::SoftFail;
+        match (tail.is_taken(), head_pending) {
+            (true, true) => return SoftFailPoll::Pending,
+            (true, false) => return SoftFailPoll::SoftFail,
+            (false, _) => {}
         }
         let mut tail = unsafe { Pin::new_unchecked(tail) };
-        if tail.as_mut().poll(cx)
-            && let res = tail.take_unchecked()
-            && res
-                .as_ref()
-                .is_ok_and(|res| matches!(res.0, NodeOutputStruct::Ok(_)))
-        {
-            return SoftFailPoll::Ready(res);
+        if tail.as_mut().poll(cx) {
+            match tail.take_output() {
+                output if matches!(output, Ok((NodeOutputStruct::Ok(_), _)) | Err(_)) => {
+                    SoftFailPoll::Ready(output)
+                }
+                _ if head_pending => SoftFailPoll::Pending,
+                _ => SoftFailPoll::SoftFail,
+            }
+        } else {
+            SoftFailPoll::Pending
         }
-        SoftFailPoll::Pending
     }
 }
 
@@ -50,14 +54,15 @@ where
             return SoftFailPoll::SoftFail;
         }
         let mut head = unsafe { Pin::new_unchecked(&mut self.get_unchecked_mut().0) };
-        if head.as_mut().poll(cx)
-            && let res = head.take_unchecked()
-            && res
-                .as_ref()
-                .is_ok_and(|res| matches!(res.0, NodeOutputStruct::Ok(_)))
-        {
-            return SoftFailPoll::Ready(res);
+        if head.as_mut().poll(cx) {
+            match head.take_output() {
+                output if matches!(output, Ok((NodeOutputStruct::Ok(_), _)) | Err(_)) => {
+                    SoftFailPoll::Ready(output)
+                }
+                _ => SoftFailPoll::SoftFail,
+            }
+        } else {
+            SoftFailPoll::Pending
         }
-        SoftFailPoll::Pending
     }
 }
