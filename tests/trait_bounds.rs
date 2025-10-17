@@ -144,12 +144,52 @@ async fn test_one_of_parallel_flow() {
 }
 
 // ----------------------------------------------------------------------------------------------------------------
+
+// ParallelFlow
+
+async fn test_parallel_flow() {
+    let mut storage = Storage::new();
+
+    // Node test
+    let _res = ParallelFlow::<u8, u128, ()>::builder()
+        // Should complain about Clone not implemented
+        .add_node(TestNode::<u16, u16>::new())
+        .add_node(TestNode::<u32, u64>::new())
+        .build(async |_, _: &mut Storage| Ok(NodeOutput::SoftFail))
+        .run_with_storage(5u8, &mut storage)
+        .await;
+
+    // IOE test
+    // Should complain about Send not implemented
+    let _res = ParallelFlow::<SomeData, (), ()>::builder()
+        .add_node(TestNode::<(), ()>::new())
+        .add_node(TestNode::<(), ()>::new())
+        .build(async |_, _: &mut Storage| Ok(NodeOutput::SoftFail))
+        .run_with_storage(().into(), &mut storage)
+        .await;
+    // Should not complain
+    let _res = ParallelFlow::<(), SomeData, ()>::builder()
+        .add_node(TestNode::<(), ()>::new())
+        .add_node(TestNode::<(), ()>::new())
+        .build(async |_, _: &mut Storage| Ok(NodeOutput::SoftFail))
+        .run_with_storage((), &mut storage)
+        .await;
+    // Should not complain
+    let _res = ParallelFlow::<(), (), SomeData>::builder()
+        .add_node(TestNode::<(), ()>::new())
+        .add_node(TestNode::<(), ()>::new())
+        .build(async |_, _: &mut Storage| Ok(NodeOutput::SoftFail))
+        .run_with_storage((), &mut storage)
+        .await;
+}
+
+// ----------------------------------------------------------------------------------------------------------------
 // Type defs
 
 use defs::*;
 use node_flow::{
-    flows::{OneOfParallelFlow, OneOfSequentialFlow, SequentialFlow},
-    node::Node,
+    flows::{OneOfParallelFlow, OneOfSequentialFlow, ParallelFlow, SequentialFlow},
+    node::{Node, NodeOutput},
     storage::Storage,
 };
 mod defs {
