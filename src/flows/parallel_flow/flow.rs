@@ -55,7 +55,6 @@ where
     Input: Send,
     for<'a> J: Joiner<'a, ChainRunOutput, Output, Error>,
     NodeTypes: ChainRun<Input, Result<ChainRunOutput, Error>, NodeIOETypes> + Send + Sync,
-    ChainRunOutput: Send,
 {
     fn run_with_storage(
         &mut self,
