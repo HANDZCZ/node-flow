@@ -26,6 +26,7 @@ impl<Input, Output, Error> ParallelFlow<Input, Output, Error>
 where
     // Trait bounds for better and nicer errors
     Input: Send + Clone,
+    Error: Send,
 {
     #[must_use]
     pub fn builder() -> Builder<Input, Output, Error> {

@@ -13,6 +13,7 @@ pub struct Builder<Input, Output, Error, NodeTypes = (), NodeIOETypes = ()>
 where
     // Trait bounds for better and nicer errors
     Input: Send + Clone,
+    Error: Send,
 {
     _ioe: PhantomData<(Input, Output, Error)>,
     _nodes_io: PhantomData<NodeIOETypes>,
@@ -23,6 +24,7 @@ impl<Input, Output, Error> Default for Builder<Input, Output, Error>
 where
     // Trait bounds for better and nicer errors
     Input: Send + Clone,
+    Error: Send,
 {
     fn default() -> Self {
         Self::new()
@@ -33,6 +35,7 @@ impl<Input, Output, Error> Builder<Input, Output, Error>
 where
     // Trait bounds for better and nicer errors
     Input: Send + Clone,
+    Error: Send,
 {
     #[must_use]
     pub fn new() -> Self {
@@ -74,6 +77,7 @@ impl<Input, Output, Error, NodeTypes, OtherNodeIOETypes, LastNodeIOETypes>
 where
     // Trait bounds for better and nicer errors
     Input: Send + Clone,
+    Error: Send,
 {
     #[allow(clippy::type_complexity)]
     pub fn add_node<NodeType, NodeInput, NodeOutput, NodeError>(
