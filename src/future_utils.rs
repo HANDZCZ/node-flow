@@ -50,8 +50,6 @@ where
     }
 }
 
-unsafe impl<T> Send for MaybeReady<T> where T: Future + Send {}
-
 pub enum SoftFailPoll<T> {
     Pending,
     Ready(T),
