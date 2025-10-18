@@ -43,6 +43,8 @@ where
     TailNodeErrType: Into<Error>,
     TailNodeOutType: Into<Output>,
     Input: Into<TailNodeInType> + Clone + Send,
+    Output: Send,
+    Error: Send,
 {
     fn spawn_with_storage(
         &self,
@@ -87,6 +89,8 @@ where
         + Sync,
     HeadNodeErrType: Into<Error>,
     HeadNodeOutType: Into<Output>,
+    Output: Send,
+    Error: Send,
 {
     fn spawn_with_storage(
         &self,

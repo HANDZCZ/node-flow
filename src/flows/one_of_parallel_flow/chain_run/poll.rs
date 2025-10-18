@@ -13,6 +13,8 @@ pub trait ChainPollOneOfParallel<Output>: Send {
 impl<Head, Tail, Output, Error> ChainPollOneOfParallel<FutOutput<Output, Error>>
     for (Head, MaybeReady<Tail>)
 where
+    Error: Send,
+    Output: Send,
     Head: ChainPollOneOfParallel<FutOutput<Output, Error>>,
     Tail: Future<Output = FutOutput<Output, Error>> + Send,
 {
@@ -47,6 +49,8 @@ where
 
 impl<Head, Output, Error> ChainPollOneOfParallel<FutOutput<Output, Error>> for (MaybeReady<Head>,)
 where
+    Error: Send,
+    Output: Send,
     Head: Future<Output = FutOutput<Output, Error>> + Send,
 {
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> SoftFailPoll<FutOutput<Output, Error>> {
