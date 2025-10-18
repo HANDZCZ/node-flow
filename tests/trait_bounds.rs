@@ -61,6 +61,16 @@ async fn test_sequential_flow() {
         .build()
         .run_with_storage((), &mut storage)
         .await;
+
+    // Node IOE test
+    let _res = SequentialFlow::<(), (), ()>::builder()
+        .add_node(TestNode::<(), ()>::new())
+        .add_node(TestNode::<SomeData, ()>::new())
+        .add_node(TestNode::<(), SomeData>::new())
+        .add_node(TestNode::<(), (), SomeData>::new())
+        .build()
+        .run_with_storage(().into(), &mut storage)
+        .await;
 }
 
 // ----------------------------------------------------------------------------------------------------------------
@@ -100,6 +110,16 @@ async fn test_one_of_sequential_flow() {
         .add_node(TestNode::<(), ()>::new())
         .build()
         .run_with_storage((), &mut storage)
+        .await;
+
+    // Node IOE test
+    let _res = OneOfSequentialFlow::<(), (), ()>::builder()
+        .add_node(TestNode::<(), ()>::new())
+        .add_node(TestNode::<SomeData, ()>::new())
+        .add_node(TestNode::<(), SomeData>::new())
+        .add_node(TestNode::<(), (), SomeData>::new())
+        .build()
+        .run_with_storage(().into(), &mut storage)
         .await;
 }
 
@@ -141,6 +161,16 @@ async fn test_one_of_parallel_flow() {
         .build()
         .run_with_storage((), &mut storage)
         .await;
+
+    // Node IOE test
+    let _res = OneOfParallelFlow::<(), (), ()>::builder()
+        .add_node(TestNode::<(), ()>::new())
+        .add_node(TestNode::<SomeData, ()>::new())
+        .add_node(TestNode::<(), SomeData>::new())
+        .add_node(TestNode::<(), (), SomeData>::new())
+        .build()
+        .run_with_storage(().into(), &mut storage)
+        .await;
 }
 
 // ----------------------------------------------------------------------------------------------------------------
@@ -180,6 +210,16 @@ async fn test_parallel_flow() {
         .add_node(TestNode::<(), ()>::new())
         .build(async |_, _: &mut Storage| Ok(NodeOutput::SoftFail))
         .run_with_storage((), &mut storage)
+        .await;
+
+    // Node IOE test
+    let _res = ParallelFlow::<(), (), ()>::builder()
+        .add_node(TestNode::<(), ()>::new())
+        .add_node(TestNode::<SomeData, ()>::new())
+        .add_node(TestNode::<(), SomeData>::new())
+        .add_node(TestNode::<(), (), SomeData>::new())
+        .build(async |_, _: &mut Storage| Ok(NodeOutput::SoftFail))
+        .run_with_storage(().into(), &mut storage)
         .await;
 }
 
@@ -222,10 +262,8 @@ mod defs {
     impl<I, O, E> Node<I, NodeOutput<O>, E> for TestNode<I, O, E>
     where
         I: Into<O> + Send,
-        O: Send,
-        E: Send,
     {
-        // Should complain Send not implemented for Self type
+        // Will always yell, but it is needed in this form for Node IOE tests
         async fn run_with_storage(
             &mut self,
             input: I,
