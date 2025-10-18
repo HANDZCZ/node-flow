@@ -17,6 +17,8 @@ pub trait ChainPollParallel<Output>: Send {
 impl<Head, Tail, HeadOutput, TailOutput, Error>
     ChainPollParallel<Result<(HeadOutput, TailOutput), Error>> for (Head, MaybeReady<Tail>)
 where
+    TailOutput: Send,
+    Error: Send,
     Head: ChainPollParallel<Result<HeadOutput, Error>>,
     Tail: Future<Output = Result<(TailOutput, Storage), Error>> + Send,
 {
@@ -48,6 +50,8 @@ where
 
 impl<Head, HeadOutput, Error> ChainPollParallel<Result<(HeadOutput,), Error>> for (MaybeReady<Head>,)
 where
+    Error: Send,
+    HeadOutput: Send,
     Head: Future<Output = Result<(HeadOutput, Storage), Error>> + Send,
 {
     fn poll(

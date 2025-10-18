@@ -40,6 +40,8 @@ where
         + Sync,
     TailNodeErrType: Into<Error>,
     Input: Into<TailNodeInType> + Clone + Send,
+    TailNodeOutType: Send,
+    Error: Send,
 {
     type ChainOut = Result<(HeadOut, NodeOutputStruct<TailNodeOutType>), Error>;
 
@@ -79,6 +81,8 @@ where
         + Send
         + Sync,
     HeadNodeErrType: Into<Error>,
+    HeadNodeOutType: Send,
+    Error: Send,
 {
     type ChainOut = Result<(NodeOutputStruct<HeadNodeOutType>,), Error>;
 
