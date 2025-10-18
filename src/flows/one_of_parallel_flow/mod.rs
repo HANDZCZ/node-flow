@@ -12,6 +12,8 @@ define_flow_and_ioe_conv_builder!(
     OneOfParallelFlow,
     ChainRun,
     >Input: Send + Clone,
+    >Output: Send,
+    >Error: Send,
     #NodeType: Send + Sync + Clone
     /// Docs :)
 );
