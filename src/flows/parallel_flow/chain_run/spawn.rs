@@ -8,6 +8,7 @@ use crate::{
 
 pub trait ChainSpawn<Input, Error, HeadOut, T> {
     type ChainOut;
+    const NUM_FUTURES: usize;
 
     fn spawn_with_storage(
         &self,
@@ -45,6 +46,7 @@ where
     Error: Send,
 {
     type ChainOut = Result<(HeadOut, NodeOutputStruct<TailNodeOutType>), Error>;
+    const NUM_FUTURES: usize = Head::NUM_FUTURES + 1;
 
     fn spawn_with_storage(
         &self,
@@ -86,6 +88,7 @@ where
     Error: Send,
 {
     type ChainOut = Result<(NodeOutputStruct<HeadNodeOutType>,), Error>;
+    const NUM_FUTURES: usize = 1;
 
     fn spawn_with_storage(
         &self,

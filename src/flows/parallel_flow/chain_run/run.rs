@@ -20,7 +20,12 @@ where
 {
     async fn run_with_storage(&self, input: Input, storage: &mut Storage) -> Result<Output, Error> {
         let fut_chain = self.spawn_with_storage(input, storage.new_gen());
+        let mut storage_acc = Vec::with_capacity(U::NUM_FUTURES);
         let mut fut_chain = pin!(fut_chain);
-        poll_fn(move |cx| ChainPollParallel::poll(fut_chain.as_mut(), cx, true, storage)).await
+        let res =
+            poll_fn(|cx| ChainPollParallel::poll(fut_chain.as_mut(), cx, true, &mut storage_acc))
+                .await;
+        storage.merge(&mut storage_acc);
+        res
     }
 }
