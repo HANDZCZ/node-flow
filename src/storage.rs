@@ -153,7 +153,7 @@ impl Storage {
                 .iter_mut()
                 .filter_map(|s| s.inner.remove(&key))
                 .collect::<Box<[_]>>();
-            if parent.is_none() && other_items.is_empty() || other_items.is_empty() {
+            if other_items.is_empty() {
                 continue;
             }
             let res = {
