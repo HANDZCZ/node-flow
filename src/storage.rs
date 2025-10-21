@@ -3,16 +3,49 @@ use std::{
     collections::{HashMap, HashSet},
 };
 
+pub enum MergeResult<T> {
+    KeepParent,
+    ReplaceOrInsert(T),
+    Remove,
+}
+
+pub trait Merge: Sized {
+    fn merge(parent: Option<&Self>, others: Box<[Self]>) -> MergeResult<Self>;
+}
+
 trait StorageItem: Any + Send {
     fn duplicate(&self) -> Box<dyn StorageItem>;
+    fn merge(
+        &self,
+        parent: Option<&dyn StorageItem>,
+        others: Box<[Box<dyn StorageItem>]>,
+    ) -> MergeResult<Box<dyn StorageItem>>;
 }
 
 impl<T> StorageItem for T
 where
-    T: Any + Send + Clone,
+    T: Merge + Any + Send + Clone,
 {
     fn duplicate(&self) -> Box<dyn StorageItem> {
         Box::new(self.clone())
+    }
+
+    // SAFETY: self can never be used otherwise it can lead to UB
+    fn merge(
+        &self,
+        parent: Option<&dyn StorageItem>,
+        others: Box<[Box<dyn StorageItem>]>,
+    ) -> MergeResult<Box<dyn StorageItem>> {
+        let others = others
+            .into_iter()
+            .map(|b| *(b as Box<dyn Any>).downcast::<T>().unwrap())
+            .collect::<Box<_>>();
+        let parent = parent.map(|v| (v as &dyn Any).downcast_ref::<T>().unwrap());
+        match <T as Merge>::merge(parent, others) {
+            MergeResult::ReplaceOrInsert(val) => MergeResult::ReplaceOrInsert(Box::new(val)),
+            MergeResult::KeepParent => MergeResult::KeepParent,
+            MergeResult::Remove => MergeResult::Remove,
+        }
     }
 }
 
@@ -70,7 +103,7 @@ impl Storage {
     #[allow(clippy::missing_panics_doc)]
     pub fn insert<T>(&mut self, val: T) -> Option<T>
     where
-        T: Any + Send + Clone,
+        T: Merge + Any + Send + Clone,
     {
         self.changed.insert(TypeId::of::<T>());
         self.inner
@@ -102,6 +135,53 @@ impl Storage {
         self.inner = other.inner;
         self.changed.extend(other.changed.iter());
     }
+
+    /// Merges changed items in other storages into this one.
+    ///
+    /// Storages passed as others can be used later, but they will be missing all changed items
+    /// (any item accessed through: [`get_mut`](Self::get_mut), [`remove`](Self::remove), [`insert`](Self::insert))!
+    pub(crate) fn merge(&mut self, others: &mut [Self]) {
+        let mut changed = std::mem::take(&mut others[0].changed);
+        others
+            .iter_mut()
+            .skip(1)
+            .for_each(|s| changed.extend(s.changed.drain()));
+
+        for key in changed {
+            let parent = self.inner.get(&key).map(Box::as_ref);
+            let other_items = others
+                .iter_mut()
+                .filter_map(|s| s.inner.remove(&key))
+                .collect::<Box<[_]>>();
+            if parent.is_none() && other_items.is_empty() || other_items.is_empty() {
+                continue;
+            }
+            let res = {
+                // Call merge on dyn StorageItem type
+                // All types (inside of a `parent` and `other_items[...]`) have the same type
+                let dispatcher: &dyn StorageItem = match parent {
+                    Some(p) => p,
+                    None => &*other_items[0],
+                };
+                // SAFETY: reference is only used for VTable lookup, the self type is otherwise unused,
+                //         this reference is then dropped and never used since it will most likely point to a non-existent data
+                let dispatcher: &dyn StorageItem = unsafe { &*std::ptr::from_ref(dispatcher) };
+                dispatcher.merge(parent, other_items)
+            };
+            match res {
+                MergeResult::KeepParent => {}
+                MergeResult::ReplaceOrInsert(val) => {
+                    self.inner.insert(key, val);
+                    self.changed.insert(key);
+                }
+                MergeResult::Remove => {
+                    if self.inner.remove(&key).is_some() {
+                        self.changed.insert(key);
+                    }
+                }
+            }
+        }
+    }
 }
 
 #[cfg(test)]
@@ -111,6 +191,30 @@ pub mod tests {
     #[derive(Debug, Clone)]
     #[allow(dead_code)]
     pub struct MyVal(String);
+
+    impl Default for MyVal {
+        fn default() -> Self {
+            Self("|".to_owned())
+        }
+    }
+
+    impl Merge for MyVal {
+        fn merge(parent: Option<&Self>, others: Box<[Self]>) -> MergeResult<Self> {
+            let len = parent.as_ref().map(|v| v.0.len()).unwrap_or_default()
+                + others.iter().map(|v| v.0.len()).sum::<usize>();
+            if len == 0 {
+                return MergeResult::KeepParent;
+            }
+            let mut res = String::with_capacity(len);
+            if let Some(v) = parent {
+                res.push_str(&v.0);
+            }
+            for v in others {
+                res.push_str(&v.0);
+            }
+            MergeResult::ReplaceOrInsert(MyVal(res))
+        }
+    }
 
     #[test]
     fn works() {
@@ -133,5 +237,23 @@ pub mod tests {
         let v = s.remove::<MyVal>();
         assert!(v.is_some());
         assert_eq!(v.unwrap().0, "jop".to_string());
+    }
+
+    #[test]
+    fn test_merge() {
+        let mut parent = Storage::new();
+        let mut child1 = parent.new_gen();
+        child1.insert(MyVal("bbb".to_owned()));
+        let mut child2 = parent.new_gen();
+        child2.insert(MyVal("ccc".to_owned()));
+        let mut child3 = parent.new_gen();
+        child3.insert(MyVal("ddd".to_owned()));
+        parent.merge(&mut [child1, child2, child3]);
+        let mut child = parent.new_gen();
+        child.insert(MyVal("aaa".to_owned()));
+        parent.merge(&mut [child]);
+
+        let res = parent.get::<MyVal>();
+        assert_eq!(res.unwrap().0, "bbbcccdddaaa".to_owned());
     }
 }
