@@ -134,7 +134,8 @@ mod test {
             .add_node(InsertIntoStorageAssertWasNotInStorage::<u32, u64, (), MyVal>::new())
             .add_node(Passer::<u16, u32, ()>::new())
             .build(async |input, storage: &mut Storage| {
-                storage.insert(MyVal::default());
+                let merged_orig = storage.insert(MyVal::default());
+                assert_eq!(merged_orig, Some(MyVal("|||".to_owned())));
                 assert_eq!(
                     input,
                     (
@@ -150,8 +151,10 @@ mod test {
                 );
                 Ok(NodeOutput::Ok(120))
             });
-        let res = flow.run_with_storage(5, &mut st).await;
 
+        let res = flow.run_with_storage(5, &mut st).await;
         assert_eq!(res, Result::Ok(NodeOutput::Ok(120)));
+
+        assert_eq!(st.remove::<MyVal>(), Some(MyVal::default()));
     }
 }

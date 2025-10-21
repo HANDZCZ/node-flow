@@ -188,9 +188,9 @@ impl Storage {
 pub mod tests {
     use super::*;
 
-    #[derive(Debug, Clone)]
+    #[derive(Debug, Clone, PartialEq, Eq)]
     #[allow(dead_code)]
-    pub struct MyVal(String);
+    pub struct MyVal(pub String);
 
     impl Default for MyVal {
         fn default() -> Self {
