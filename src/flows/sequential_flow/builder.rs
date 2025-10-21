@@ -60,6 +60,7 @@ where
         NodeType: Node<NodeInput, NodeOutputStruct<NodeOutput>, NodeError>,
         // Trait bounds for better and nicer errors
         NodeType: Clone + Send + Sync,
+        NodeInput: Send,
     {
         Builder {
             _ioe: PhantomData,
@@ -111,6 +112,7 @@ where
         NodeType: Node<NodeInput, NodeOutputStruct<NodeOutput>, NodeError>,
         // Trait bounds for better and nicer errors
         NodeType: Clone + Send + Sync,
+        NodeInput: Send,
     {
         Builder {
             _ioe: PhantomData,
