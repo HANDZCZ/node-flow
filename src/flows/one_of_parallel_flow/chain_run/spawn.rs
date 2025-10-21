@@ -1,9 +1,10 @@
+use futures_util::future::MaybeDone;
+
 use crate::{
     flows::{
         ChainLink, NodeIOE, NodeResult,
         one_of_parallel_flow::{FutOutput, chain_run::poll::ChainPollOneOfParallel},
     },
-    future_utils::MaybeReady,
     node::{Node, NodeOutput as NodeOutputStruct},
     storage::Storage,
 };
@@ -70,7 +71,7 @@ where
                 new_storage,
             ))
         };
-        (head_res, MaybeReady::Pending(tail_fut))
+        (head_res, MaybeDone::Future(tail_fut))
     }
 }
 
@@ -111,6 +112,6 @@ where
                 storage,
             ))
         };
-        (MaybeReady::Pending(fut),)
+        (MaybeDone::Future(fut),)
     }
 }

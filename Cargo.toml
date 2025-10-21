@@ -7,6 +7,7 @@ description = "A crate that provides flows for nodes"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
+futures-util = { version = "^0.3.31", default-features = false }
 
 [dev-dependencies]
 tokio = { version = "^1.48.0", features = ["full"] }

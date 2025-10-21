@@ -3,7 +3,9 @@ use std::{
     task::{Context, Poll},
 };
 
-use crate::{future_utils::MaybeReady, storage::Storage};
+use futures_util::future::MaybeDone;
+
+use crate::storage::Storage;
 
 pub trait ChainPollParallel<Output>: Send {
     fn poll(
@@ -15,7 +17,7 @@ pub trait ChainPollParallel<Output>: Send {
 }
 
 impl<Head, Tail, HeadOutput, TailOutput, Error>
-    ChainPollParallel<Result<(HeadOutput, TailOutput), Error>> for (Head, MaybeReady<Tail>)
+    ChainPollParallel<Result<(HeadOutput, TailOutput), Error>> for (Head, MaybeDone<Tail>)
 where
     TailOutput: Send,
     Error: Send,
@@ -30,13 +32,13 @@ where
     ) -> Poll<Result<(HeadOutput, TailOutput), Error>> {
         let (head, tail) = unsafe { self.get_unchecked_mut() };
         let (head, mut tail) = unsafe { (Pin::new_unchecked(head), Pin::new_unchecked(tail)) };
-        let tail_ready = tail.as_mut().poll(cx) && tail_ready;
+        let tail_ready = tail.as_mut().poll(cx).is_ready() && tail_ready;
 
         let Poll::Ready(res) = ChainPollParallel::poll(head, cx, tail_ready, storage) else {
             return Poll::Pending;
         };
         match res {
-            Ok(head_out) => match tail.take_output() {
+            Ok(head_out) => match tail.take_output().unwrap() {
                 Ok((tail_out, node_storage)) => {
                     // TODO: merge storage
                     Poll::Ready(Ok((head_out, tail_out)))
@@ -48,7 +50,7 @@ where
     }
 }
 
-impl<Head, HeadOutput, Error> ChainPollParallel<Result<(HeadOutput,), Error>> for (MaybeReady<Head>,)
+impl<Head, HeadOutput, Error> ChainPollParallel<Result<(HeadOutput,), Error>> for (MaybeDone<Head>,)
 where
     Error: Send,
     HeadOutput: Send,
@@ -61,8 +63,8 @@ where
         storage: &mut Storage,
     ) -> Poll<Result<(HeadOutput,), Error>> {
         let mut head = unsafe { Pin::new_unchecked(&mut self.get_unchecked_mut().0) };
-        if head.as_mut().poll(cx) && tail_ready {
-            match head.take_output() {
+        if head.as_mut().poll(cx).is_ready() && tail_ready {
+            match head.take_output().unwrap() {
                 Ok((output, node_storage)) => {
                     // TODO: merge storage
                     Poll::Ready(Ok((output,)))

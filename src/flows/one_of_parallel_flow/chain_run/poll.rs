@@ -1,8 +1,9 @@
 use std::{pin::Pin, task::Context};
 
+use futures_util::future::MaybeDone;
+
 use crate::{
-    flows::one_of_parallel_flow::FutOutput,
-    future_utils::{MaybeReady, SoftFailPoll},
+    flows::one_of_parallel_flow::FutOutput, future_utils::SoftFailPoll,
     node::NodeOutput as NodeOutputStruct,
 };
 
@@ -11,7 +12,7 @@ pub trait ChainPollOneOfParallel<Output>: Send {
 }
 
 impl<Head, Tail, Output, Error> ChainPollOneOfParallel<FutOutput<Output, Error>>
-    for (Head, MaybeReady<Tail>)
+    for (Head, MaybeDone<Tail>)
 where
     Error: Send,
     Output: Send,
@@ -27,14 +28,14 @@ where
             SoftFailPoll::SoftFail => false,
         };
 
-        match (tail.is_taken(), head_pending) {
+        match (matches!(tail, MaybeDone::Gone), head_pending) {
             (true, true) => return SoftFailPoll::Pending,
             (true, false) => return SoftFailPoll::SoftFail,
             (false, _) => {}
         }
         let mut tail = unsafe { Pin::new_unchecked(tail) };
-        if tail.as_mut().poll(cx) {
-            match tail.take_output() {
+        if tail.as_mut().poll(cx).is_ready() {
+            match tail.take_output().unwrap() {
                 output if matches!(output, Ok((NodeOutputStruct::Ok(_), _)) | Err(_)) => {
                     SoftFailPoll::Ready(output)
                 }
@@ -47,19 +48,19 @@ where
     }
 }
 
-impl<Head, Output, Error> ChainPollOneOfParallel<FutOutput<Output, Error>> for (MaybeReady<Head>,)
+impl<Head, Output, Error> ChainPollOneOfParallel<FutOutput<Output, Error>> for (MaybeDone<Head>,)
 where
     Error: Send,
     Output: Send,
     Head: Future<Output = FutOutput<Output, Error>> + Send,
 {
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> SoftFailPoll<FutOutput<Output, Error>> {
-        if self.0.is_taken() {
+        if matches!(self.0, MaybeDone::Gone) {
             return SoftFailPoll::SoftFail;
         }
         let mut head = unsafe { Pin::new_unchecked(&mut self.get_unchecked_mut().0) };
-        if head.as_mut().poll(cx) {
-            match head.take_output() {
+        if head.as_mut().poll(cx).is_ready() {
+            match head.take_output().unwrap() {
                 output if matches!(output, Ok((NodeOutputStruct::Ok(_), _)) | Err(_)) => {
                     SoftFailPoll::Ready(output)
                 }
