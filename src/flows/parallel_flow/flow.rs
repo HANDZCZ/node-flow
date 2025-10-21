@@ -78,7 +78,7 @@ mod test {
     use crate::{
         flows::tests::{InsertIntoStorageAssertWasNotInStorage, Passer, SoftFailNode},
         node::{Node, NodeOutput},
-        storage::Storage,
+        storage::{Storage, tests::MyVal},
     };
 
     #[tokio::test]
@@ -89,7 +89,7 @@ mod test {
             .add_node(SoftFailNode::<u16, u32, ()>::new())
             .add_node(Passer::<u16, u32, ()>::new())
             .build(async |input, storage: &mut Storage| {
-                storage.insert(String::new());
+                storage.insert(MyVal::default());
                 assert_eq!(
                     input,
                     (
@@ -128,13 +128,13 @@ mod test {
     async fn test_flow_storage() {
         let mut st = Storage::new();
         let mut flow = Flow::<u8, u64, ()>::builder()
-            .add_node(InsertIntoStorageAssertWasNotInStorage::<u16, u32, (), String>::new())
+            .add_node(InsertIntoStorageAssertWasNotInStorage::<u16, u32, (), MyVal>::new())
             .add_node(Passer::<u16, u64, ()>::new())
-            .add_node(InsertIntoStorageAssertWasNotInStorage::<u8, u16, (), String>::new())
-            .add_node(InsertIntoStorageAssertWasNotInStorage::<u32, u64, (), String>::new())
+            .add_node(InsertIntoStorageAssertWasNotInStorage::<u8, u16, (), MyVal>::new())
+            .add_node(InsertIntoStorageAssertWasNotInStorage::<u32, u64, (), MyVal>::new())
             .add_node(Passer::<u16, u32, ()>::new())
             .build(async |input, storage: &mut Storage| {
-                storage.insert(String::new());
+                storage.insert(MyVal::default());
                 assert_eq!(
                     input,
                     (

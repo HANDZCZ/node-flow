@@ -2,7 +2,7 @@ use std::marker::PhantomData;
 
 use crate::{
     node::{Node, NodeOutput},
-    storage::Storage,
+    storage::{Merge, Storage},
 };
 
 #[derive(Clone)]
@@ -67,7 +67,7 @@ where
     I: Into<O> + Send,
     O: Send,
     E: Send,
-    T: Default + Clone + Send + 'static,
+    T: Default + Merge + Clone + Send + 'static,
 {
     async fn run_with_storage(
         &mut self,
