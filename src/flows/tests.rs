@@ -1,8 +1,8 @@
 use std::marker::PhantomData;
 
 use crate::{
+    context::storage::local_storage::{LocalStorage, Merge},
     node::{Node, NodeOutput},
-    storage::{Merge, Storage},
 };
 
 #[derive(Clone)]
@@ -56,19 +56,16 @@ impl<I, O, E, T> InsertIntoStorageAssertWasNotInStorage<I, O, E, T> {
         Self(PhantomData)
     }
 }
-impl<I, O, E, T> Node<I, NodeOutput<O>, E, Storage>
+impl<I, O, E, T, C> Node<I, NodeOutput<O>, E, C>
     for InsertIntoStorageAssertWasNotInStorage<I, O, E, T>
 where
     I: Into<O> + Send,
     O: Send,
     E: Send,
     T: Default + Merge + Clone + Send + 'static,
+    C: LocalStorage + Send,
 {
-    async fn run(
-        &mut self,
-        _input: I,
-        context: &mut LocalBranchStorage,
-    ) -> Result<NodeOutput<O>, E> {
+    async fn run(&mut self, _input: I, context: &mut C) -> Result<NodeOutput<O>, E> {
         assert!(
             context.insert(T::default()).is_none(),
             "{} was in storage",

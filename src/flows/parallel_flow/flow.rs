@@ -94,19 +94,19 @@ where
 mod test {
     use super::{ChainRun, ParallelFlow as Flow};
     use crate::{
+        context::storage::local_storage::{LocalStorage, LocalStorageImpl, tests::MyVal},
         flows::tests::{InsertIntoStorageAssertWasNotInStorage, Passer, SoftFailNode},
         node::{Node, NodeOutput},
-        storage::{Storage, tests::MyVal},
     };
 
     #[tokio::test]
     async fn test_flow() {
-        let mut st = Storage::new();
+        let mut st = LocalStorageImpl::new();
         let mut flow = Flow::<u8, u64, (), _>::builder()
             .add_node(Passer::<u16, u64, ()>::new())
             .add_node(SoftFailNode::<u16, u32, ()>::new())
             .add_node(Passer::<u16, u32, ()>::new())
-            .build(async |input, context: &mut Storage| {
+            .build(async |input, context: &mut LocalStorageImpl| {
                 context.insert(MyVal::default());
                 assert_eq!(
                     input,
@@ -124,7 +124,7 @@ mod test {
 
     #[tokio::test]
     async fn test_chain() {
-        let mut st = Storage::new();
+        let mut st = LocalStorageImpl::new();
         let node = (
             (
                 (Passer::<u16, u64, ()>::new(),),
@@ -144,14 +144,14 @@ mod test {
 
     #[tokio::test]
     async fn test_flow_storage() {
-        let mut st = Storage::new();
+        let mut st = LocalStorageImpl::new();
         let mut flow = Flow::<u8, u64, (), _>::builder()
             .add_node(InsertIntoStorageAssertWasNotInStorage::<u16, u32, (), MyVal>::new())
             .add_node(Passer::<u16, u64, ()>::new())
             .add_node(InsertIntoStorageAssertWasNotInStorage::<u8, u16, (), MyVal>::new())
             .add_node(InsertIntoStorageAssertWasNotInStorage::<u32, u64, (), MyVal>::new())
             .add_node(Passer::<u16, u32, ()>::new())
-            .build(async |input, context: &mut Storage| {
+            .build(async |input, context: &mut LocalStorageImpl| {
                 let merged_orig = context.insert(MyVal::default());
                 assert_eq!(merged_orig, Some(MyVal("|||".to_owned())));
                 assert_eq!(

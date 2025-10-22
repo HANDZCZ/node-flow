@@ -21,14 +21,14 @@ define_flow_and_ioe_conv_builder!(
 mod test {
     use super::{ChainRun, OneOfParallelFlow as Flow};
     use crate::{
+        context::storage::local_storage::{LocalStorageImpl, tests::MyVal},
         flows::tests::{InsertIntoStorageAssertWasNotInStorage, Passer, SoftFailNode},
         node::{Node, NodeOutput},
-        storage::{Storage, tests::MyVal},
     };
 
     #[tokio::test]
     async fn test_flow() {
-        let mut st = Storage::new();
+        let mut st = LocalStorageImpl::new();
         let mut flow = Flow::<u8, u64, (), _>::builder()
             .add_node(SoftFailNode::<u16, u32, ()>::new())
             .add_node(SoftFailNode::<u8, u16, ()>::new())
@@ -42,7 +42,7 @@ mod test {
 
     #[tokio::test]
     async fn test_chain() {
-        let mut st = Storage::new();
+        let mut st = LocalStorageImpl::new();
         let node = (
             (
                 (SoftFailNode::<u16, u32, ()>::new(),),
@@ -56,7 +56,7 @@ mod test {
 
     #[tokio::test]
     async fn test_flow_storage() {
-        let mut st = Storage::new();
+        let mut st = LocalStorageImpl::new();
         let mut flow = Flow::<u8, u64, (), _>::builder()
             .add_node(InsertIntoStorageAssertWasNotInStorage::<u16, u32, (), MyVal>::new())
             .add_node(InsertIntoStorageAssertWasNotInStorage::<u8, u16, (), MyVal>::new())

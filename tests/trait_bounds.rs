@@ -30,13 +30,13 @@ impl Fork for DummyContext {
         unimplemented!()
     }
 }
-impl Replace for DummyContext {
-    fn replace_with(&mut self, other: Self) {
+impl Update for DummyContext {
+    fn update_from(&mut self, other: Self) {
         unimplemented!()
     }
 }
-impl Aggregate for DummyContext {
-    fn aggregate_from(&mut self, others: &mut [Self]) {
+impl Join for DummyContext {
+    fn join(&mut self, others: Box<[Self]>) {
         unimplemented!()
     }
 }
@@ -47,7 +47,7 @@ impl Aggregate for DummyContext {
 
 // #[cfg(doc)]
 async fn test_sequential_flow() {
-    let mut storage = Storage::new();
+    let mut storage = LocalStorageImpl::new();
 
     // Node test
     let _res = SequentialFlow::<u8, u128, (), _>::builder()
@@ -102,7 +102,7 @@ async fn test_sequential_flow() {
 
 // #[cfg(doc)]
 async fn test_one_of_sequential_flow() {
-    let mut storage = Storage::new();
+    let mut storage = LocalStorageImpl::new();
 
     // Node test
     let _res = OneOfSequentialFlow::<u8, u128, (), _>::builder()
@@ -157,7 +157,7 @@ async fn test_one_of_sequential_flow() {
 
 // #[cfg(doc)]
 async fn test_one_of_parallel_flow() {
-    let mut storage = Storage::new();
+    let mut storage = LocalStorageImpl::new();
 
     // Node test
     let _res = OneOfParallelFlow::<u8, u128, (), _>::builder()
@@ -212,13 +212,13 @@ async fn test_one_of_parallel_flow() {
 
 // #[cfg(doc)]
 async fn test_parallel_flow() {
-    let mut storage = Storage::new();
+    let mut storage = LocalStorageImpl::new();
 
     // Node test
     let _res = ParallelFlow::<u8, u128, (), _>::builder()
         .add_node(TestNode::<u16, u16>::new())
         .add_node(TestNode::<u32, u64>::new())
-        .build(async |_, _: &mut Storage| Ok(NodeOutput::SoftFail))
+        .build(async |_, _: &mut LocalStorageImpl| Ok(NodeOutput::SoftFail))
         .run(5u8, &mut storage)
         .await;
 
@@ -226,19 +226,19 @@ async fn test_parallel_flow() {
     let _res = ParallelFlow::<SomeData, (), (), _>::builder()
         .add_node(TestNode::<(), ()>::new())
         .add_node(TestNode::<(), ()>::new())
-        .build(async |_, _: &mut Storage| Ok(NodeOutput::SoftFail))
+        .build(async |_, _: &mut LocalStorageImpl| Ok(NodeOutput::SoftFail))
         .run(().into(), &mut storage)
         .await;
     let _res = ParallelFlow::<(), SomeData, (), _>::builder()
         .add_node(TestNode::<(), ()>::new())
         .add_node(TestNode::<(), ()>::new())
-        .build(async |_, _: &mut Storage| Ok(NodeOutput::SoftFail))
+        .build(async |_, _: &mut LocalStorageImpl| Ok(NodeOutput::SoftFail))
         .run((), &mut storage)
         .await;
     let _res = ParallelFlow::<(), (), SomeData, _>::builder()
         .add_node(TestNode::<(), ()>::new())
         .add_node(TestNode::<(), ()>::new())
-        .build(async |_, _: &mut Storage| Ok(NodeOutput::SoftFail))
+        .build(async |_, _: &mut LocalStorageImpl| Ok(NodeOutput::SoftFail))
         .run((), &mut storage)
         .await;
 
@@ -248,7 +248,7 @@ async fn test_parallel_flow() {
         .add_node(TestNode::<SomeData, ()>::new())
         .add_node(TestNode::<(), SomeData>::new())
         .add_node(TestNode::<(), (), SomeData>::new())
-        .build(async |_, _: &mut Storage| Ok(NodeOutput::SoftFail))
+        .build(async |_, _: &mut LocalStorageImpl| Ok(NodeOutput::SoftFail))
         .run(().into(), &mut storage)
         .await;
 
@@ -266,9 +266,9 @@ async fn test_parallel_flow() {
 
 use defs::*;
 use node_flow::{
+    context::{Fork, Join, Update, storage::local_storage::LocalStorageImpl},
     flows::{OneOfParallelFlow, OneOfSequentialFlow, ParallelFlow, SequentialFlow},
     node::{Node, NodeOutput},
-    storage::{Aggregate, Fork, Replace, Storage},
 };
 mod defs {
     use std::{cell::UnsafeCell, marker::PhantomData};

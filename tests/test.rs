@@ -1,8 +1,8 @@
 use node_flow::{
+    context::storage::local_storage::LocalStorageImpl,
     flows::{OneOfSequentialFlow, SequentialFlow},
     impl_node_output,
     node::{Node, NodeOutput},
-    storage::Storage,
 };
 
 #[derive(Clone, Debug)]
@@ -15,11 +15,14 @@ impl From<StringMatcherError> for String {
     }
 }
 
-impl Node<String, NodeOutput<String>, StringMatcherError, Storage> for StringMatcher {
+impl<C> Node<String, NodeOutput<String>, StringMatcherError, C> for StringMatcher
+where
+    C: Send,
+{
     async fn run(
         &mut self,
         input: String,
-        _context: &mut Storage,
+        _context: &mut C,
     ) -> Result<NodeOutput<String>, StringMatcherError> {
         if !input.contains(self.0) {
             return Ok(NodeOutput::SoftFail);
@@ -105,7 +108,7 @@ async fn sequential_flow_success() {
         .add_node(StringMatcher("match"))
         .add_node(StringForwarder)
         .build();
-    let mut storage = Storage::new();
+    let mut storage = LocalStorageImpl::new();
     let res = flow.run("match".into(), &mut storage).await;
     assert_eq!(res, Ok(NodeOutput::Ok("match".to_owned())));
 }
@@ -116,7 +119,7 @@ async fn sequential_flow_soft_fail() {
         .add_node(StringMatcher("match"))
         .add_node(StringForwarder)
         .build();
-    let mut storage = Storage::new();
+    let mut storage = LocalStorageImpl::new();
     let res = flow.run("".into(), &mut storage).await;
     assert_eq!(res, Ok(NodeOutput::SoftFail));
 }
@@ -136,7 +139,7 @@ async fn sequential_flow_io_conversion_success() {
         .add_node(StringToWrapString)
         // convert
         .build();
-    let mut storage = Storage::new();
+    let mut storage = LocalStorageImpl::new();
     let res = flow.run("match".into(), &mut storage).await;
     assert_eq!(res, Ok(NodeOutput::Ok("match".to_owned())));
 }
@@ -153,7 +156,7 @@ async fn one_of_sequential_flow_success() {
         .add_node(StringMatcher("hmm no"))
         .add_node(StringForwarder)
         .build();
-    let mut storage = Storage::new();
+    let mut storage = LocalStorageImpl::new();
     let res = flow.run("match".into(), &mut storage).await;
     assert_eq!(res, Ok(NodeOutput::Ok("match".to_owned())));
 }
@@ -165,7 +168,7 @@ async fn one_of_sequential_flow_soft_fail() {
         .add_node(StringMatcher("match"))
         .add_node(StringMatcher("match"))
         .build();
-    let mut storage = Storage::new();
+    let mut storage = LocalStorageImpl::new();
     let res = flow.run("".into(), &mut storage).await;
     assert_eq!(res, Ok(NodeOutput::SoftFail));
 }
@@ -175,7 +178,7 @@ async fn one_of_sequential_flow_io_conversion_success() {
     let mut flow = OneOfSequentialFlow::<String, String, String, _>::builder()
         .add_node::<_, WrapString, _, _>(ForwarderT)
         .build();
-    let mut storage = Storage::new();
+    let mut storage = LocalStorageImpl::new();
     let res = flow.run("match".into(), &mut storage).await;
     assert_eq!(res, Ok(NodeOutput::Ok("match".to_owned())));
 }
