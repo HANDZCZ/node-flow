@@ -3,15 +3,10 @@ use std::{
     collections::{HashMap, HashSet},
 };
 
-pub enum MergeResult<T> {
-    KeepParent,
-    ReplaceOrInsert(T),
-    Remove,
-}
-
-pub trait Merge: Sized {
-    fn merge(parent: Option<&Self>, others: Box<[Self]>) -> MergeResult<Self>;
-}
+use crate::context::{
+    Fork, Join, Update,
+    storage::local_storage::{LocalStorage, Merge, MergeResult},
+};
 
 trait StorageItem: Any + Send {
     fn duplicate(&self) -> Box<dyn StorageItem>;
@@ -55,27 +50,24 @@ impl Clone for Box<dyn StorageItem> {
     }
 }
 
-/// Storage that is used in [`Node`](crate::node::Node).
 #[derive(Default)]
-pub struct Storage {
+pub struct LocalStorageImpl {
     inner: HashMap<TypeId, Box<dyn StorageItem>>,
     changed: HashSet<TypeId>,
 }
 
-impl Storage {
-    /// Constructs new `Storage`.
+impl LocalStorageImpl {
+    /// Constructs new `LocalStorageImpl`.
     #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
+}
 
-    /// Gets reference of a value with type `T` from storage if it is present.
-    // should never panic
-    #[allow(clippy::missing_panics_doc)]
-    #[must_use]
-    pub fn get<T>(&self) -> Option<&T>
+impl LocalStorage for LocalStorageImpl {
+    fn get<T>(&self) -> Option<&T>
     where
-        T: Any,
+        T: 'static,
     {
         self.inner.get(&TypeId::of::<T>()).map(|val| {
             let any_ref: &dyn Any = &**val;
@@ -83,13 +75,9 @@ impl Storage {
         })
     }
 
-    /// Gets mutable reference of a value with type `T` from storage if it is present.
-    // should never panic
-    #[allow(clippy::missing_panics_doc)]
-    #[must_use]
-    pub fn get_mut<T>(&mut self) -> Option<&mut T>
+    fn get_mut<T>(&mut self) -> Option<&mut T>
     where
-        T: Any,
+        T: 'static,
     {
         self.inner.get_mut(&TypeId::of::<T>()).map(|val| {
             self.changed.insert(TypeId::of::<T>());
@@ -98,12 +86,9 @@ impl Storage {
         })
     }
 
-    /// Inserts value with type `T` to storage and returns the value that was there previously if it was there.
-    // should never panic
-    #[allow(clippy::missing_panics_doc)]
-    pub fn insert<T>(&mut self, val: T) -> Option<T>
+    fn insert<T>(&mut self, val: T) -> Option<T>
     where
-        T: Merge + Any + Send + Clone,
+        T: Merge + Clone + Send + 'static,
     {
         self.changed.insert(TypeId::of::<T>());
         self.inner
@@ -111,36 +96,35 @@ impl Storage {
             .map(|val| *(val as Box<dyn Any>).downcast::<T>().unwrap())
     }
 
-    /// Removes and returns value with type `T` from storage if it is present.
-    // should never panic
-    #[allow(clippy::missing_panics_doc)]
-    pub fn remove<T>(&mut self) -> Option<T>
+    fn remove<T>(&mut self) -> Option<T>
     where
-        T: Any,
+        T: 'static,
     {
         self.inner.remove(&TypeId::of::<T>()).map(|val| {
             self.changed.insert(TypeId::of::<T>());
             *(val as Box<dyn Any>).downcast::<T>().unwrap()
         })
     }
+}
 
-    pub(crate) fn new_gen(&self) -> Self {
+impl Fork for LocalStorageImpl {
+    fn fork(&self) -> Self {
         Self {
             inner: self.inner.clone(),
             changed: HashSet::new(),
         }
     }
+}
 
-    pub(crate) fn replace(&mut self, other: Self) {
+impl Update for LocalStorageImpl {
+    fn update_from(&mut self, other: Self) {
         self.inner = other.inner;
         self.changed.extend(other.changed.iter());
     }
+}
 
-    /// Merges changed items in other storages into this one.
-    ///
-    /// Storages passed as others can be used later, but they will be missing all changed items
-    /// (any item accessed through: [`get_mut`](Self::get_mut), [`remove`](Self::remove), [`insert`](Self::insert))!
-    pub(crate) fn merge(&mut self, others: &mut [Self]) {
+impl Join for LocalStorageImpl {
+    fn join(&mut self, mut others: Box<[Self]>) {
         if others.is_empty() {
             return;
         }
@@ -265,7 +249,7 @@ pub mod tests {
 
     #[test]
     fn works() {
-        let mut s = Storage::new();
+        let mut s = LocalStorageImpl::new();
         s.insert(MyVal("test".into()));
         //println!("{s:#?}");
         let v = s.get::<MyVal>();
@@ -288,17 +272,17 @@ pub mod tests {
 
     #[test]
     fn test_merge() {
-        let mut parent = Storage::new();
-        let mut child1 = parent.new_gen();
+        let mut parent = LocalStorageImpl::new();
+        let mut child1 = parent.fork();
         child1.insert(MyVal("bbb".to_owned()));
-        let mut child2 = parent.new_gen();
+        let mut child2 = parent.fork();
         child2.insert(MyVal("ccc".to_owned()));
-        let mut child3 = parent.new_gen();
+        let mut child3 = parent.fork();
         child3.insert(MyVal("ddd".to_owned()));
-        parent.merge(&mut [child1, child2, child3]);
-        let mut child = parent.new_gen();
+        parent.join(Box::new([child1, child2, child3]));
+        let mut child = parent.fork();
         child.insert(MyVal("aaa".to_owned()));
-        parent.merge(&mut [child]);
+        parent.join(Box::new([child]));
 
         let res = parent.get::<MyVal>();
         assert_eq!(res.unwrap().0, "bbbcccdddaaa".to_owned());
