@@ -19,24 +19,21 @@ mod test {
     use crate::{
         flows::tests::Passer,
         node::{Node, NodeOutput},
-        storage::Storage,
     };
 
     #[tokio::test]
     async fn test_flow() {
-        let mut st = Storage::new();
-        let mut flow = Flow::<bool, u128, ()>::builder()
+        let mut flow = Flow::<bool, u128, (), ()>::builder()
             .add_node(Passer::<u8, u16, ()>::new())
             .add_node(Passer::<u32, u64, ()>::new())
             .build();
-        let res = flow.run_with_storage(true, &mut st).await;
+        let res = flow.run(true, &mut ()).await;
 
         assert_eq!(res, Ok(NodeOutput::Ok(1)));
     }
 
     #[tokio::test]
     async fn test_chain() {
-        let mut st = Storage::new();
         let node = (
             (
                 (Passer::<bool, u8, ()>::new(),),
@@ -45,8 +42,7 @@ mod test {
             Passer::<u64, u128, ()>::new(),
         );
         let res =
-            ChainRun::<_, Result<NodeOutput<u128>, ()>, _>::run_with_storage(&node, true, &mut st)
-                .await;
+            ChainRun::<_, Result<NodeOutput<u128>, ()>, (), _>::run(&node, true, &mut ()).await;
         assert_eq!(res, Ok(NodeOutput::Ok(1)));
     }
 }

@@ -14,17 +14,14 @@ impl<I, O, E> Passer<I, O, E> {
     }
 }
 
-impl<I, O, E> Node<I, NodeOutput<O>, E> for Passer<I, O, E>
+impl<I, O, E, C> Node<I, NodeOutput<O>, E, C> for Passer<I, O, E>
 where
     I: Into<O> + Send,
     O: Send,
     E: Send,
+    C: Send,
 {
-    async fn run_with_storage(
-        &mut self,
-        input: I,
-        _storage: &mut Storage,
-    ) -> Result<NodeOutput<O>, E> {
+    async fn run(&mut self, input: I, _context: &mut C) -> Result<NodeOutput<O>, E> {
         tokio::time::sleep(tokio::time::Duration::from_millis(150)).await;
         Ok(NodeOutput::Ok(input.into()))
     }
@@ -38,17 +35,14 @@ impl<I, O, E> SoftFailNode<I, O, E> {
         Self(PhantomData)
     }
 }
-impl<I, O, E> Node<I, NodeOutput<O>, E> for SoftFailNode<I, O, E>
+impl<I, O, E, C> Node<I, NodeOutput<O>, E, C> for SoftFailNode<I, O, E>
 where
     I: Into<O> + Send,
     O: Send,
     E: Send,
+    C: Send,
 {
-    async fn run_with_storage(
-        &mut self,
-        _input: I,
-        _storage: &mut Storage,
-    ) -> Result<NodeOutput<O>, E> {
+    async fn run(&mut self, _input: I, _context: &mut C) -> Result<NodeOutput<O>, E> {
         tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
         Ok(NodeOutput::SoftFail)
     }
@@ -62,20 +56,21 @@ impl<I, O, E, T> InsertIntoStorageAssertWasNotInStorage<I, O, E, T> {
         Self(PhantomData)
     }
 }
-impl<I, O, E, T> Node<I, NodeOutput<O>, E> for InsertIntoStorageAssertWasNotInStorage<I, O, E, T>
+impl<I, O, E, T> Node<I, NodeOutput<O>, E, Storage>
+    for InsertIntoStorageAssertWasNotInStorage<I, O, E, T>
 where
     I: Into<O> + Send,
     O: Send,
     E: Send,
     T: Default + Merge + Clone + Send + 'static,
 {
-    async fn run_with_storage(
+    async fn run(
         &mut self,
         _input: I,
-        storage: &mut Storage,
+        context: &mut LocalBranchStorage,
     ) -> Result<NodeOutput<O>, E> {
         assert!(
-            storage.insert(T::default()).is_none(),
+            context.insert(T::default()).is_none(),
             "{} was in storage",
             std::any::type_name::<T>()
         );

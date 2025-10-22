@@ -7,19 +7,24 @@ use crate::{
     node::NodeOutput as NodeOutputStruct,
 };
 
-pub trait ChainPollOneOfParallel<Output>: Send {
+pub trait ChainPollOneOfParallel<Output, NodeContext>: Send {
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> SoftFailPoll<Output>;
 }
 
-impl<Head, Tail, Output, Error> ChainPollOneOfParallel<FutOutput<Output, Error>>
+impl<Head, Tail, Output, Error, NodeContext>
+    ChainPollOneOfParallel<FutOutput<Output, Error, NodeContext>, NodeContext>
     for (Head, MaybeDone<Tail>)
 where
     Error: Send,
     Output: Send,
-    Head: ChainPollOneOfParallel<FutOutput<Output, Error>>,
-    Tail: Future<Output = FutOutput<Output, Error>> + Send,
+    NodeContext: Send,
+    Head: ChainPollOneOfParallel<FutOutput<Output, Error, NodeContext>, NodeContext>,
+    Tail: Future<Output = FutOutput<Output, Error, NodeContext>> + Send,
 {
-    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> SoftFailPoll<FutOutput<Output, Error>> {
+    fn poll(
+        self: Pin<&mut Self>,
+        cx: &mut Context<'_>,
+    ) -> SoftFailPoll<FutOutput<Output, Error, NodeContext>> {
         let (head, tail) = unsafe { self.get_unchecked_mut() };
         let head = unsafe { Pin::new_unchecked(head) };
         let head_pending = match ChainPollOneOfParallel::poll(head, cx) {
@@ -48,13 +53,18 @@ where
     }
 }
 
-impl<Head, Output, Error> ChainPollOneOfParallel<FutOutput<Output, Error>> for (MaybeDone<Head>,)
+impl<Head, Output, Error, NodeContext>
+    ChainPollOneOfParallel<FutOutput<Output, Error, NodeContext>, NodeContext> for (MaybeDone<Head>,)
 where
     Error: Send,
     Output: Send,
-    Head: Future<Output = FutOutput<Output, Error>> + Send,
+    NodeContext: Send,
+    Head: Future<Output = FutOutput<Output, Error, NodeContext>> + Send,
 {
-    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> SoftFailPoll<FutOutput<Output, Error>> {
+    fn poll(
+        self: Pin<&mut Self>,
+        cx: &mut Context<'_>,
+    ) -> SoftFailPoll<FutOutput<Output, Error, NodeContext>> {
         if matches!(self.0, MaybeDone::Gone) {
             return SoftFailPoll::SoftFail;
         }

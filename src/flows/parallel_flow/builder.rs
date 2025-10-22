@@ -9,18 +9,18 @@ use crate::{
     node::{Node, NodeOutput as NodeOutputStruct},
 };
 
-pub struct Builder<Input, Output, Error, NodeTypes = (), NodeIOETypes = ()>
+pub struct Builder<Input, Output, Error, Context, NodeTypes = (), NodeIOETypes = ()>
 where
     // Trait bounds for better and nicer errors
     Input: Send + Clone,
     Error: Send,
 {
-    _ioe: PhantomData<(Input, Output, Error)>,
+    _ioec: PhantomData<(Input, Output, Error, Context)>,
     _nodes_io: PhantomData<NodeIOETypes>,
     nodes: NodeTypes,
 }
 
-impl<Input, Output, Error> Default for Builder<Input, Output, Error>
+impl<Input, Output, Error, Context> Default for Builder<Input, Output, Error, Context>
 where
     // Trait bounds for better and nicer errors
     Input: Send + Clone,
@@ -31,7 +31,7 @@ where
     }
 }
 
-impl<Input, Output, Error> Builder<Input, Output, Error>
+impl<Input, Output, Error, Context> Builder<Input, Output, Error, Context>
 where
     // Trait bounds for better and nicer errors
     Input: Send + Clone,
@@ -40,7 +40,7 @@ where
     #[must_use]
     pub fn new() -> Self {
         Self {
-            _ioe: PhantomData,
+            _ioec: PhantomData,
             _nodes_io: PhantomData,
             nodes: (),
         }
@@ -54,31 +54,40 @@ where
         Input,
         Output,
         Error,
+        Context,
         (NodeType,),
         ChainLink<(), NodeIOE<NodeInput, NodeOutput, NodeError>>,
     >
     where
         Input: Into<NodeInput>,
         NodeError: Into<Error>,
-        NodeType: Node<NodeInput, NodeOutputStruct<NodeOutput>, NodeError>,
+        NodeType: Node<NodeInput, NodeOutputStruct<NodeOutput>, NodeError, Context>,
         // Trait bounds for better and nicer errors
         NodeType: Send + Sync + Clone,
         NodeOutput: Send,
     {
         Builder {
-            _ioe: PhantomData,
+            _ioec: PhantomData,
             _nodes_io: PhantomData,
             nodes: (node,),
         }
     }
 }
 
-impl<Input, Output, Error, NodeTypes, OtherNodeIOETypes, LastNodeIOETypes>
-    Builder<Input, Output, Error, NodeTypes, ChainLink<OtherNodeIOETypes, LastNodeIOETypes>>
+impl<Input, Output, Error, Context, NodeTypes, OtherNodeIOETypes, LastNodeIOETypes>
+    Builder<
+        Input,
+        Output,
+        Error,
+        Context,
+        NodeTypes,
+        ChainLink<OtherNodeIOETypes, LastNodeIOETypes>,
+    >
 where
     // Trait bounds for better and nicer errors
     Input: Send + Clone,
     Error: Send,
+    Context: Send,
 {
     #[allow(clippy::type_complexity)]
     pub fn add_node<NodeType, NodeInput, NodeOutput, NodeError>(
@@ -88,6 +97,7 @@ where
         Input,
         Output,
         Error,
+        Context,
         ChainLink<NodeTypes, NodeType>,
         ChainLink<
             ChainLink<OtherNodeIOETypes, LastNodeIOETypes>,
@@ -97,19 +107,19 @@ where
     where
         Input: Into<NodeInput>,
         NodeError: Into<Error>,
-        NodeType: Node<NodeInput, NodeOutputStruct<NodeOutput>, NodeError>,
+        NodeType: Node<NodeInput, NodeOutputStruct<NodeOutput>, NodeError, Context>,
         // Trait bounds for better and nicer errors
         NodeType: Send + Sync + Clone,
         NodeOutput: Send,
     {
         Builder {
-            _ioe: PhantomData,
+            _ioec: PhantomData,
             _nodes_io: PhantomData,
             nodes: (self.nodes, node),
         }
     }
 
-    // TODO: mention signature issue in docs (&mut Storage must be present and it needs to be async closure: async |_, _: &mut Storage| {...})
+    // TODO: mention signature issue in docs (&mut Context must be present and it needs to be async closure: async |_, _: &mut Context| {...})
     #[allow(clippy::type_complexity)]
     pub fn build<J, ChainRunOutput>(
         self,
@@ -118,21 +128,23 @@ where
         Input,
         Output,
         Error,
+        Context,
         ChainRunOutput,
         J,
         NodeTypes,
         ChainLink<OtherNodeIOETypes, LastNodeIOETypes>,
     >
     where
-        for<'a> J: Joiner<'a, ChainRunOutput, Output, Error>,
+        for<'a> J: Joiner<'a, ChainRunOutput, Output, Error, Context>,
         NodeTypes: ChainRun<
                 Input,
                 Result<ChainRunOutput, Error>,
+                Context,
                 ChainLink<OtherNodeIOETypes, LastNodeIOETypes>,
             >,
     {
         Flow {
-            _ioe: PhantomData,
+            _ioec: PhantomData,
             _nodes_io: PhantomData,
             nodes: Arc::new(self.nodes),
             _joiner_input: PhantomData,

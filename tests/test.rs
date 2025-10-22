@@ -15,11 +15,11 @@ impl From<StringMatcherError> for String {
     }
 }
 
-impl Node<String, NodeOutput<String>, StringMatcherError> for StringMatcher {
-    async fn run_with_storage(
+impl Node<String, NodeOutput<String>, StringMatcherError, Storage> for StringMatcher {
+    async fn run(
         &mut self,
         input: String,
-        _storage: &mut Storage,
+        _context: &mut Storage,
     ) -> Result<NodeOutput<String>, StringMatcherError> {
         if !input.contains(self.0) {
             return Ok(NodeOutput::SoftFail);
@@ -38,11 +38,11 @@ impl From<StringForwarderError> for String {
     }
 }
 
-impl Node<String, String, StringForwarderError> for StringForwarder {
-    async fn run_with_storage(
+impl<C: Send> Node<String, String, StringForwarderError, C> for StringForwarder {
+    async fn run(
         &mut self,
         input: String,
-        _storage: &mut Storage,
+        _context: &mut C,
     ) -> Result<String, StringForwarderError> {
         Ok(input)
     }
@@ -64,12 +64,8 @@ impl From<WrapString> for String {
 #[derive(Clone, Debug)]
 struct StringToWrapString;
 
-impl Node<String, WrapString, String> for StringToWrapString {
-    async fn run_with_storage(
-        &mut self,
-        input: String,
-        _storage: &mut Storage,
-    ) -> Result<WrapString, String> {
+impl<C: Send> Node<String, WrapString, String, C> for StringToWrapString {
+    async fn run(&mut self, input: String, _context: &mut C) -> Result<WrapString, String> {
         Ok(WrapString(input))
     }
 }
@@ -78,12 +74,8 @@ impl_node_output!(StringToWrapString, String, WrapString, String);
 #[derive(Clone, Debug)]
 struct WrapStringToString;
 
-impl Node<WrapString, String, String> for WrapStringToString {
-    async fn run_with_storage(
-        &mut self,
-        input: WrapString,
-        _storage: &mut Storage,
-    ) -> Result<String, String> {
+impl<C: Send> Node<WrapString, String, String, C> for WrapStringToString {
+    async fn run(&mut self, input: WrapString, _context: &mut C) -> Result<String, String> {
         Ok(input.0)
     }
 }
@@ -92,17 +84,13 @@ impl_node_output!(WrapStringToString, WrapString, String, String);
 #[derive(Clone, Debug)]
 struct ForwarderT;
 
-impl<T: Send + 'static> Node<T, T, String> for ForwarderT {
-    async fn run_with_storage(&mut self, input: T, _storage: &mut Storage) -> Result<T, String> {
+impl<T: Send + 'static, C: Send> Node<T, T, String, C> for ForwarderT {
+    async fn run(&mut self, input: T, _context: &mut C) -> Result<T, String> {
         Ok(input)
     }
 }
-impl<T: Send + 'static> Node<T, NodeOutput<T>, String> for ForwarderT {
-    async fn run_with_storage(
-        &mut self,
-        input: T,
-        _storage: &mut Storage,
-    ) -> Result<NodeOutput<T>, String> {
+impl<T: Send + 'static, C: Send> Node<T, NodeOutput<T>, String, C> for ForwarderT {
+    async fn run(&mut self, input: T, _context: &mut C) -> Result<NodeOutput<T>, String> {
         Ok(NodeOutput::Ok(input))
     }
 }
@@ -113,29 +101,29 @@ impl<T: Send + 'static> Node<T, NodeOutput<T>, String> for ForwarderT {
 
 #[tokio::test]
 async fn sequential_flow_success() {
-    let mut flow = SequentialFlow::<String, String, String>::builder()
+    let mut flow = SequentialFlow::<String, String, String, _>::builder()
         .add_node(StringMatcher("match"))
         .add_node(StringForwarder)
         .build();
     let mut storage = Storage::new();
-    let res = flow.run_with_storage("match".into(), &mut storage).await;
+    let res = flow.run("match".into(), &mut storage).await;
     assert_eq!(res, Ok(NodeOutput::Ok("match".to_owned())));
 }
 
 #[tokio::test]
 async fn sequential_flow_soft_fail() {
-    let mut flow = SequentialFlow::<String, String, String>::builder()
+    let mut flow = SequentialFlow::<String, String, String, _>::builder()
         .add_node(StringMatcher("match"))
         .add_node(StringForwarder)
         .build();
     let mut storage = Storage::new();
-    let res = flow.run_with_storage("".into(), &mut storage).await;
+    let res = flow.run("".into(), &mut storage).await;
     assert_eq!(res, Ok(NodeOutput::SoftFail));
 }
 
 #[tokio::test]
 async fn sequential_flow_io_conversion_success() {
-    let mut flow = SequentialFlow::<String, String, String>::builder()
+    let mut flow = SequentialFlow::<String, String, String, _>::builder()
         // convert
         .add_node(WrapStringToString)
         .add_node(StringForwarder)
@@ -149,7 +137,7 @@ async fn sequential_flow_io_conversion_success() {
         // convert
         .build();
     let mut storage = Storage::new();
-    let res = flow.run_with_storage("match".into(), &mut storage).await;
+    let res = flow.run("match".into(), &mut storage).await;
     assert_eq!(res, Ok(NodeOutput::Ok("match".to_owned())));
 }
 
@@ -159,35 +147,35 @@ async fn sequential_flow_io_conversion_success() {
 
 #[tokio::test]
 async fn one_of_sequential_flow_success() {
-    let mut flow = OneOfSequentialFlow::<String, String, String>::builder()
+    let mut flow = OneOfSequentialFlow::<String, String, String, _>::builder()
         .add_node(StringMatcher("nope"))
         .add_node(StringMatcher("still no"))
         .add_node(StringMatcher("hmm no"))
         .add_node(StringForwarder)
         .build();
     let mut storage = Storage::new();
-    let res = flow.run_with_storage("match".into(), &mut storage).await;
+    let res = flow.run("match".into(), &mut storage).await;
     assert_eq!(res, Ok(NodeOutput::Ok("match".to_owned())));
 }
 
 #[tokio::test]
 async fn one_of_sequential_flow_soft_fail() {
-    let mut flow = OneOfSequentialFlow::<String, String, String>::builder()
+    let mut flow = OneOfSequentialFlow::<String, String, String, _>::builder()
         .add_node(StringMatcher("match"))
         .add_node(StringMatcher("match"))
         .add_node(StringMatcher("match"))
         .build();
     let mut storage = Storage::new();
-    let res = flow.run_with_storage("".into(), &mut storage).await;
+    let res = flow.run("".into(), &mut storage).await;
     assert_eq!(res, Ok(NodeOutput::SoftFail));
 }
 
 #[tokio::test]
 async fn one_of_sequential_flow_io_conversion_success() {
-    let mut flow = OneOfSequentialFlow::<String, String, String>::builder()
+    let mut flow = OneOfSequentialFlow::<String, String, String, _>::builder()
         .add_node::<_, WrapString, _, _>(ForwarderT)
         .build();
     let mut storage = Storage::new();
-    let res = flow.run_with_storage("match".into(), &mut storage).await;
+    let res = flow.run("match".into(), &mut storage).await;
     assert_eq!(res, Ok(NodeOutput::Ok("match".to_owned())));
 }

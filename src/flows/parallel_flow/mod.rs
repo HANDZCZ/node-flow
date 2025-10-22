@@ -3,29 +3,30 @@ pub use builder::*;
 mod flow;
 pub use flow::*;
 
-use crate::{flows::NodeResult, storage::Storage};
+use crate::flows::NodeResult;
 mod chain_run;
 
-pub trait Joiner<'a, Input, Output, Error>: Send + Sync {
+pub trait Joiner<'a, Input, Output, Error, Context>: Send + Sync {
     fn join(
         &self,
         input: Input,
-        storage: &'a mut Storage,
+        context: &'a mut Context,
     ) -> impl Future<Output = NodeResult<Output, Error>> + Send;
 }
 
-impl<'a, Input, Output, Error, T, F> Joiner<'a, Input, Output, Error> for T
+impl<'a, Input, Output, Error, Context, T, F> Joiner<'a, Input, Output, Error, Context> for T
 where
     Input: Send,
     T: Send + Sync,
     F: Future<Output = NodeResult<Output, Error>> + Send + 'a,
-    T: Fn(Input, &'a mut Storage) -> F,
+    T: Fn(Input, &'a mut Context) -> F,
+    Context: 'a,
 {
     fn join(
         &self,
         input: Input,
-        storage: &'a mut Storage,
+        context: &'a mut Context,
     ) -> impl Future<Output = NodeResult<Output, Error>> {
-        (self)(input, storage)
+        (self)(input, context)
     }
 }

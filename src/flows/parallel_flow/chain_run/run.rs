@@ -1,31 +1,29 @@
 use std::{future::poll_fn, pin::pin};
 
 use crate::{
+    context::{Fork, Join},
     flows::parallel_flow::chain_run::{poll::ChainPollParallel, spawn::ChainSpawn},
-    storage::Storage,
 };
 
-pub trait ChainRunParallel<Input, Output, T> {
-    fn run_with_storage(
-        &self,
-        input: Input,
-        storage: &mut Storage,
-    ) -> impl Future<Output = Output> + Send;
+pub trait ChainRunParallel<Input, Output, Context, T> {
+    fn run(&self, input: Input, context: &mut Context) -> impl Future<Output = Output> + Send;
 }
 
-impl<Input, Output, Error, T, U> ChainRunParallel<Input, Result<Output, Error>, T> for U
+impl<Input, Output, Error, Context, T, U> ChainRunParallel<Input, Result<Output, Error>, Context, T>
+    for U
 where
-    U: ChainSpawn<Input, Error, Output, T, ChainOut = Result<Output, Error>> + Sync,
+    U: ChainSpawn<Input, Error, Context, Output, T, ChainOut = Result<Output, Error>> + Sync,
     Input: Send,
+    Context: Fork + Join + Send,
 {
-    async fn run_with_storage(&self, input: Input, storage: &mut Storage) -> Result<Output, Error> {
-        let fut_chain = self.spawn_with_storage(input, storage.new_gen());
-        let mut storage_acc = Vec::with_capacity(U::NUM_FUTURES);
+    async fn run(&self, input: Input, context: &mut Context) -> Result<Output, Error> {
+        let fut_chain = self.spawn(input, context.fork());
+        let mut context_acc = Vec::with_capacity(U::NUM_FUTURES);
         let mut fut_chain = pin!(fut_chain);
         let res =
-            poll_fn(|cx| ChainPollParallel::poll(fut_chain.as_mut(), cx, true, &mut storage_acc))
+            poll_fn(|cx| ChainPollParallel::poll(fut_chain.as_mut(), cx, true, &mut context_acc))
                 .await;
-        storage.merge(&mut storage_acc);
+        context.join(context_acc.into_boxed_slice());
         res
     }
 }

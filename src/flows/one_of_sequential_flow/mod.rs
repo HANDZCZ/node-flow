@@ -23,13 +23,13 @@ mod test {
     #[tokio::test]
     async fn test_flow() {
         let mut st = Storage::new();
-        let mut flow = Flow::<u8, u64, ()>::builder()
+        let mut flow = Flow::<u8, u64, (), _>::builder()
             .add_node(SoftFailNode::<u16, u32, ()>::new())
             .add_node(SoftFailNode::<u8, u16, ()>::new())
             .add_node(SoftFailNode::<u32, u64, ()>::new())
             .add_node(Passer::<u16, u32, ()>::new())
             .build();
-        let res = flow.run_with_storage(5, &mut st).await;
+        let res = flow.run(5, &mut st).await;
 
         assert_eq!(res, Ok(NodeOutput::Ok(5)));
     }
@@ -44,22 +44,20 @@ mod test {
             ),
             Passer::<u16, u32, ()>::new(),
         );
-        let res =
-            ChainRun::<_, Result<NodeOutput<u64>, ()>, _>::run_with_storage(&node, 5u8, &mut st)
-                .await;
+        let res = ChainRun::<_, Result<NodeOutput<u64>, ()>, _, _>::run(&node, 5u8, &mut st).await;
         assert_eq!(res, Ok(NodeOutput::Ok(5)));
     }
 
     #[tokio::test]
     async fn test_flow_storage() {
         let mut st = Storage::new();
-        let mut flow = Flow::<u8, u64, ()>::builder()
+        let mut flow = Flow::<u8, u64, (), _>::builder()
             .add_node(InsertIntoStorageAssertWasNotInStorage::<u16, u32, (), MyVal>::new())
             .add_node(InsertIntoStorageAssertWasNotInStorage::<u8, u16, (), MyVal>::new())
             .add_node(InsertIntoStorageAssertWasNotInStorage::<u32, u64, (), MyVal>::new())
             .add_node(Passer::<u16, u32, ()>::new())
             .build();
-        let res = flow.run_with_storage(5, &mut st).await;
+        let res = flow.run(5, &mut st).await;
 
         assert_eq!(res, Ok(NodeOutput::Ok(5)));
     }

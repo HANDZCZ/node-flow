@@ -1,10 +1,8 @@
-use crate::storage::Storage;
-
-pub trait Node<Input, Output, Error> {
-    fn run_with_storage(
+pub trait Node<Input, Output, Error, Context> {
+    fn run(
         &mut self,
         input: Input,
-        storage: &mut Storage,
+        context: &mut Context,
     ) -> impl Future<Output = Result<Output, Error>> + Send;
 }
 
@@ -17,15 +15,18 @@ pub enum NodeOutput<T> {
 #[macro_export]
 macro_rules! impl_node_output {
     ($node:ty, $input:ty, $output:ty, $error:ty) => {
-        impl $crate::node::Node<$input, $crate::node::NodeOutput<$output>, $error> for $node {
-            async fn run_with_storage(
+        impl<Context: Send>
+            $crate::node::Node<$input, $crate::node::NodeOutput<$output>, $error, Context>
+            for $node
+        {
+            async fn run(
                 &mut self,
                 input: $input,
-                storage: &mut $crate::storage::Storage,
+                context: &mut Context,
             ) -> Result<$crate::node::NodeOutput<$output>, $error> {
                 Ok($crate::node::NodeOutput::Ok(
-                    <Self as $crate::node::Node<$input, $output, $error>>::run_with_storage(
-                        self, input, storage,
+                    <Self as $crate::node::Node<$input, $output, $error, Context>>::run(
+                        self, input, context,
                     )
                     .await?,
                 ))

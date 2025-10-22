@@ -23,50 +23,76 @@ impl Clone for SomeData {
     }
 }
 
+// DummyContext
+unsafe impl Send for DummyContext {}
+impl Fork for DummyContext {
+    fn fork(&self) -> Self {
+        unimplemented!()
+    }
+}
+impl Replace for DummyContext {
+    fn replace_with(&mut self, other: Self) {
+        unimplemented!()
+    }
+}
+impl Aggregate for DummyContext {
+    fn aggregate_from(&mut self, others: &mut [Self]) {
+        unimplemented!()
+    }
+}
+
 // ----------------------------------------------------------------------------------------------------------------
 
 // SequentialFlow
 
+// #[cfg(doc)]
 async fn test_sequential_flow() {
     let mut storage = Storage::new();
 
     // Node test
-    let _res = SequentialFlow::<u8, u128, ()>::builder()
-        // Should complain about Clone not implemented
+    let _res = SequentialFlow::<u8, u128, (), _>::builder()
         .add_node(TestNode::<u16, u16>::new())
         .add_node(TestNode::<u32, u64>::new())
         .build()
-        .run_with_storage(5u8, &mut storage)
+        .run(5u8, &mut storage)
         .await;
 
     // IOE test
-    let _res = SequentialFlow::<SomeData, (), ()>::builder()
+    let _res = SequentialFlow::<SomeData, (), (), _>::builder()
         .add_node(TestNode::<(), ()>::new())
         .add_node(TestNode::<(), ()>::new())
         .build()
-        .run_with_storage(().into(), &mut storage)
+        .run(().into(), &mut storage)
         .await;
-    let _res = SequentialFlow::<(), SomeData, ()>::builder()
+    let _res = SequentialFlow::<(), SomeData, (), _>::builder()
         .add_node(TestNode::<(), ()>::new())
         .add_node(TestNode::<(), ()>::new())
         .build()
-        .run_with_storage((), &mut storage)
+        .run((), &mut storage)
         .await;
-    let _res = SequentialFlow::<(), (), SomeData>::builder()
+    let _res = SequentialFlow::<(), (), SomeData, _>::builder()
         .add_node(TestNode::<(), ()>::new())
         .add_node(TestNode::<(), ()>::new())
         .build()
-        .run_with_storage((), &mut storage)
+        .run((), &mut storage)
         .await;
 
     // Node IOE test
-    let _res = SequentialFlow::<(), (), ()>::builder()
+    let _res = SequentialFlow::<(), (), (), _>::builder()
         .add_node(TestNode::<(), ()>::new())
         .add_node(TestNode::<SomeData, ()>::new())
         .add_node(TestNode::<(), SomeData>::new())
         .add_node(TestNode::<(), (), SomeData>::new())
         .build()
-        .run_with_storage(().into(), &mut storage)
+        .run(().into(), &mut storage)
+        .await;
+
+    // Context test
+    let _res = SequentialFlow::<(), (), (), _>::builder()
+        .add_node(TestNode::<(), ()>::new())
+        .add_node(TestNode::<(), ()>::new())
+        .build()
+        .run((), &mut DummyContext::new())
         .await;
 }
 
@@ -74,45 +100,54 @@ async fn test_sequential_flow() {
 
 // OneOfSequentialFlow
 
+// #[cfg(doc)]
 async fn test_one_of_sequential_flow() {
     let mut storage = Storage::new();
 
     // Node test
-    let _res = OneOfSequentialFlow::<u8, u128, ()>::builder()
+    let _res = OneOfSequentialFlow::<u8, u128, (), _>::builder()
         .add_node(TestNode::<u16, u16>::new())
         .add_node(TestNode::<u32, u64>::new())
         .build()
-        .run_with_storage(5u8, &mut storage)
+        .run(5u8, &mut storage)
         .await;
 
     // IOE test
-    let _res = OneOfSequentialFlow::<SomeData, (), ()>::builder()
+    let _res = OneOfSequentialFlow::<SomeData, (), (), _>::builder()
         .add_node(TestNode::<(), ()>::new())
         .add_node(TestNode::<(), ()>::new())
         .build()
-        .run_with_storage(().into(), &mut storage)
+        .run(().into(), &mut storage)
         .await;
-    let _res = OneOfSequentialFlow::<(), SomeData, ()>::builder()
+    let _res = OneOfSequentialFlow::<(), SomeData, (), _>::builder()
         .add_node(TestNode::<(), ()>::new())
         .add_node(TestNode::<(), ()>::new())
         .build()
-        .run_with_storage((), &mut storage)
+        .run((), &mut storage)
         .await;
-    let _res = OneOfSequentialFlow::<(), (), SomeData>::builder()
+    let _res = OneOfSequentialFlow::<(), (), SomeData, _>::builder()
         .add_node(TestNode::<(), ()>::new())
         .add_node(TestNode::<(), ()>::new())
         .build()
-        .run_with_storage((), &mut storage)
+        .run((), &mut storage)
         .await;
 
     // Node IOE test
-    let _res = OneOfSequentialFlow::<(), (), ()>::builder()
+    let _res = OneOfSequentialFlow::<(), (), (), _>::builder()
         .add_node(TestNode::<(), ()>::new())
         .add_node(TestNode::<SomeData, ()>::new())
         .add_node(TestNode::<(), SomeData>::new())
         .add_node(TestNode::<(), (), SomeData>::new())
         .build()
-        .run_with_storage(().into(), &mut storage)
+        .run(().into(), &mut storage)
+        .await;
+
+    // Context test
+    let _res = OneOfSequentialFlow::<(), (), (), _>::builder()
+        .add_node(TestNode::<(), ()>::new())
+        .add_node(TestNode::<(), ()>::new())
+        .build()
+        .run((), &mut DummyContext::new())
         .await;
 }
 
@@ -120,45 +155,54 @@ async fn test_one_of_sequential_flow() {
 
 // OneOfParallelFlow
 
+// #[cfg(doc)]
 async fn test_one_of_parallel_flow() {
     let mut storage = Storage::new();
 
     // Node test
-    let _res = OneOfParallelFlow::<u8, u128, ()>::builder()
+    let _res = OneOfParallelFlow::<u8, u128, (), _>::builder()
         .add_node(TestNode::<u16, u16>::new())
         .add_node(TestNode::<u32, u64>::new())
         .build()
-        .run_with_storage(5u8, &mut storage)
+        .run(5u8, &mut storage)
         .await;
 
     // IOE test
-    let _res = OneOfParallelFlow::<SomeData, (), ()>::builder()
+    let _res = OneOfParallelFlow::<SomeData, (), (), _>::builder()
         .add_node(TestNode::<(), ()>::new())
         .add_node(TestNode::<(), ()>::new())
         .build()
-        .run_with_storage(().into(), &mut storage)
+        .run(().into(), &mut storage)
         .await;
-    let _res = OneOfParallelFlow::<(), SomeData, ()>::builder()
+    let _res = OneOfParallelFlow::<(), SomeData, (), _>::builder()
         .add_node(TestNode::<(), ()>::new())
         .add_node(TestNode::<(), ()>::new())
         .build()
-        .run_with_storage((), &mut storage)
+        .run((), &mut storage)
         .await;
-    let _res = OneOfParallelFlow::<(), (), SomeData>::builder()
+    let _res = OneOfParallelFlow::<(), (), SomeData, _>::builder()
         .add_node(TestNode::<(), ()>::new())
         .add_node(TestNode::<(), ()>::new())
         .build()
-        .run_with_storage((), &mut storage)
+        .run((), &mut storage)
         .await;
 
     // Node IOE test
-    let _res = OneOfParallelFlow::<(), (), ()>::builder()
+    let _res = OneOfParallelFlow::<(), (), (), _>::builder()
         .add_node(TestNode::<(), ()>::new())
         .add_node(TestNode::<SomeData, ()>::new())
         .add_node(TestNode::<(), SomeData>::new())
         .add_node(TestNode::<(), (), SomeData>::new())
         .build()
-        .run_with_storage(().into(), &mut storage)
+        .run(().into(), &mut storage)
+        .await;
+
+    // Context test
+    let _res = OneOfParallelFlow::<(), (), (), _>::builder()
+        .add_node(TestNode::<(), ()>::new())
+        .add_node(TestNode::<(), ()>::new())
+        .build()
+        .run((), &mut DummyContext::new())
         .await;
 }
 
@@ -166,45 +210,54 @@ async fn test_one_of_parallel_flow() {
 
 // ParallelFlow
 
+// #[cfg(doc)]
 async fn test_parallel_flow() {
     let mut storage = Storage::new();
 
     // Node test
-    let _res = ParallelFlow::<u8, u128, ()>::builder()
+    let _res = ParallelFlow::<u8, u128, (), _>::builder()
         .add_node(TestNode::<u16, u16>::new())
         .add_node(TestNode::<u32, u64>::new())
         .build(async |_, _: &mut Storage| Ok(NodeOutput::SoftFail))
-        .run_with_storage(5u8, &mut storage)
+        .run(5u8, &mut storage)
         .await;
 
     // IOE test
-    let _res = ParallelFlow::<SomeData, (), ()>::builder()
+    let _res = ParallelFlow::<SomeData, (), (), _>::builder()
         .add_node(TestNode::<(), ()>::new())
         .add_node(TestNode::<(), ()>::new())
         .build(async |_, _: &mut Storage| Ok(NodeOutput::SoftFail))
-        .run_with_storage(().into(), &mut storage)
+        .run(().into(), &mut storage)
         .await;
-    let _res = ParallelFlow::<(), SomeData, ()>::builder()
+    let _res = ParallelFlow::<(), SomeData, (), _>::builder()
         .add_node(TestNode::<(), ()>::new())
         .add_node(TestNode::<(), ()>::new())
         .build(async |_, _: &mut Storage| Ok(NodeOutput::SoftFail))
-        .run_with_storage((), &mut storage)
+        .run((), &mut storage)
         .await;
-    let _res = ParallelFlow::<(), (), SomeData>::builder()
+    let _res = ParallelFlow::<(), (), SomeData, _>::builder()
         .add_node(TestNode::<(), ()>::new())
         .add_node(TestNode::<(), ()>::new())
         .build(async |_, _: &mut Storage| Ok(NodeOutput::SoftFail))
-        .run_with_storage((), &mut storage)
+        .run((), &mut storage)
         .await;
 
     // Node IOE test
-    let _res = ParallelFlow::<(), (), ()>::builder()
+    let _res = ParallelFlow::<(), (), (), _>::builder()
         .add_node(TestNode::<(), ()>::new())
         .add_node(TestNode::<SomeData, ()>::new())
         .add_node(TestNode::<(), SomeData>::new())
         .add_node(TestNode::<(), (), SomeData>::new())
         .build(async |_, _: &mut Storage| Ok(NodeOutput::SoftFail))
-        .run_with_storage(().into(), &mut storage)
+        .run(().into(), &mut storage)
+        .await;
+
+    // Context test
+    let _res = ParallelFlow::<(), (), (), _>::builder()
+        .add_node(TestNode::<(), ()>::new())
+        .add_node(TestNode::<(), ()>::new())
+        .build(async |_, _: &mut _| Ok(NodeOutput::SoftFail))
+        .run((), &mut DummyContext::new())
         .await;
 }
 
@@ -215,7 +268,7 @@ use defs::*;
 use node_flow::{
     flows::{OneOfParallelFlow, OneOfSequentialFlow, ParallelFlow, SequentialFlow},
     node::{Node, NodeOutput},
-    storage::Storage,
+    storage::{Aggregate, Fork, Replace, Storage},
 };
 mod defs {
     use std::{cell::UnsafeCell, marker::PhantomData};
@@ -244,16 +297,21 @@ mod defs {
         }
     }
 
-    impl<I, O, E> Node<I, NodeOutput<O>, E> for TestNode<I, O, E>
+    impl<I, O, E, C> Node<I, NodeOutput<O>, E, C> for TestNode<I, O, E>
     where
         I: Into<O> + Send,
+        C: Send,
     {
-        async fn run_with_storage(
-            &mut self,
-            input: I,
-            _storage: &mut node_flow::storage::Storage,
-        ) -> Result<NodeOutput<O>, E> {
+        async fn run(&mut self, input: I, _context: &mut C) -> Result<NodeOutput<O>, E> {
             Ok(NodeOutput::Ok(input.into()))
+        }
+    }
+
+    pub struct DummyContext(UnsafeCell<*const ()>);
+
+    impl DummyContext {
+        pub fn new() -> Self {
+            unimplemented!()
         }
     }
 }

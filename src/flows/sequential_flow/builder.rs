@@ -6,29 +6,30 @@ use crate::{
     node::{Node, NodeOutput as NodeOutputStruct},
 };
 
-pub struct Builder<Input, Output, Error, NodeTypes = (), NodeIOETypes = ()>
+pub struct Builder<Input, Output, Error, Context, NodeTypes = (), NodeIOETypes = ()>
 where
     // Trait bounds for better and nicer errors
     Input: Send,
     Error: Send,
 {
-    _ioe: PhantomData<(Input, Output, Error)>,
+    _ioec: PhantomData<(Input, Output, Error, Context)>,
     _nodes_io: PhantomData<NodeIOETypes>,
     nodes: NodeTypes,
 }
 
-impl<Input, Output, Error> Default for Builder<Input, Output, Error>
+impl<Input, Output, Error, Context> Default for Builder<Input, Output, Error, Context>
 where
     // Trait bounds for better and nicer errors
     Input: Send,
     Error: Send,
+    Context: Send,
 {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<Input, Output, Error> Builder<Input, Output, Error>
+impl<Input, Output, Error, Context> Builder<Input, Output, Error, Context>
 where
     // Trait bounds for better and nicer errors
     Input: Send,
@@ -37,7 +38,7 @@ where
     #[must_use]
     pub fn new() -> Self {
         Self {
-            _ioe: PhantomData,
+            _ioec: PhantomData,
             _nodes_io: PhantomData,
             nodes: (),
         }
@@ -51,19 +52,20 @@ where
         Input,
         Output,
         Error,
+        Context,
         (NodeType,),
         ChainLink<(), NodeIOE<NodeInput, NodeOutput, NodeError>>,
     >
     where
         Input: Into<NodeInput>,
         NodeError: Into<Error>,
-        NodeType: Node<NodeInput, NodeOutputStruct<NodeOutput>, NodeError>,
+        NodeType: Node<NodeInput, NodeOutputStruct<NodeOutput>, NodeError, Context>,
         // Trait bounds for better and nicer errors
         NodeType: Clone + Send + Sync,
         NodeInput: Send,
     {
         Builder {
-            _ioe: PhantomData,
+            _ioec: PhantomData,
             _nodes_io: PhantomData,
             nodes: (node,),
         }
@@ -74,6 +76,7 @@ impl<
     Input,
     Output,
     Error,
+    Context,
     NodeTypes,
     LastNodeInType,
     LastNodeOutType,
@@ -84,6 +87,7 @@ impl<
         Input,
         Output,
         Error,
+        Context,
         NodeTypes,
         ChainLink<OtherNodeIOETypes, NodeIOE<LastNodeInType, LastNodeOutType, LastNodeErrType>>,
     >
@@ -100,6 +104,7 @@ where
         Input,
         Output,
         Error,
+        Context,
         ChainLink<NodeTypes, NodeType>,
         ChainLink<
             ChainLink<OtherNodeIOETypes, NodeIOE<LastNodeInType, LastNodeOutType, LastNodeErrType>>,
@@ -109,13 +114,13 @@ where
     where
         LastNodeOutType: Into<NodeInput>,
         NodeError: Into<Error>,
-        NodeType: Node<NodeInput, NodeOutputStruct<NodeOutput>, NodeError>,
+        NodeType: Node<NodeInput, NodeOutputStruct<NodeOutput>, NodeError, Context>,
         // Trait bounds for better and nicer errors
         NodeType: Clone + Send + Sync,
         NodeInput: Send,
     {
         Builder {
-            _ioe: PhantomData,
+            _ioec: PhantomData,
             _nodes_io: PhantomData,
             nodes: (self.nodes, node),
         }
@@ -128,6 +133,7 @@ where
         Input,
         Output,
         Error,
+        Context,
         NodeTypes,
         ChainLink<OtherNodeIOETypes, NodeIOE<LastNodeInType, LastNodeOutType, LastNodeErrType>>,
     >
@@ -135,7 +141,7 @@ where
         LastNodeOutType: Into<Output>,
     {
         Flow {
-            _ioe: PhantomData,
+            _ioec: PhantomData,
             _nodes_io: PhantomData,
             nodes: Arc::new(self.nodes),
         }
