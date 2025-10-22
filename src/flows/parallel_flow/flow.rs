@@ -15,10 +15,11 @@ pub struct ParallelFlow<
     NodeTypes = (),
     NodeIOETypes = (),
 > {
-    pub(super) _ioec: std::marker::PhantomData<(Input, Output, Error, Context)>,
-    pub(super) _nodes_io: std::marker::PhantomData<NodeIOETypes>,
+    #[allow(clippy::type_complexity)]
+    pub(super) _ioec: std::marker::PhantomData<fn() -> (Input, Output, Error, Context)>,
+    pub(super) _nodes_io: std::marker::PhantomData<fn() -> NodeIOETypes>,
     pub(super) nodes: std::sync::Arc<NodeTypes>,
-    pub(super) _joiner_input: std::marker::PhantomData<ChainOutput>,
+    pub(super) _joiner_input: std::marker::PhantomData<fn() -> ChainOutput>,
     pub(super) joiner: Joiner,
 }
 

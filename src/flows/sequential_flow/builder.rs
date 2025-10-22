@@ -12,8 +12,9 @@ where
     Input: Send,
     Error: Send,
 {
-    _ioec: PhantomData<(Input, Output, Error, Context)>,
-    _nodes_io: PhantomData<NodeIOETypes>,
+    #[allow(clippy::type_complexity)]
+    _ioec: PhantomData<fn() -> (Input, Output, Error, Context)>,
+    _nodes_io: PhantomData<fn() -> NodeIOETypes>,
     nodes: NodeTypes,
 }
 

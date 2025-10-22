@@ -11,8 +11,8 @@ macro_rules! define_builder {
             // Trait bounds for better and nicer errors
             $($global_param: $global_bound0 $(+$global_bound)*,)*
         {
-            _ioec: std::marker::PhantomData<(Input, Output, Error, Context)>,
-            _nodes_io: std::marker::PhantomData<NodeIOETypes>,
+            _ioec: std::marker::PhantomData<fn() -> (Input, Output, Error, Context)>,
+            _nodes_io: std::marker::PhantomData<fn() -> NodeIOETypes>,
             nodes: NodeTypes,
         }
 

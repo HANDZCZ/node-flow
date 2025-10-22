@@ -6,8 +6,8 @@ macro_rules! define_flow {
     ($flow_name:ident, $builder:ident, $chain_run:ident $(,$param:ident: $bound0:ident $(+$bound:ident)*)* $(,)? $(#[doc = $doc:expr])*) => {
         $(#[doc = $doc])*
         pub struct $flow_name<Input, Output, Error, Context, NodeTypes = (), NodeIOETypes = ()> {
-            pub(super) _ioec: std::marker::PhantomData<(Input, Output, Error, Context)>,
-            pub(super) _nodes_io: std::marker::PhantomData<NodeIOETypes>,
+            pub(super) _ioec: std::marker::PhantomData<fn() -> (Input, Output, Error, Context)>,
+            pub(super) _nodes_io: std::marker::PhantomData<fn() -> NodeIOETypes>,
             pub(super) nodes: std::sync::Arc<NodeTypes>,
         }
 
