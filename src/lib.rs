@@ -8,7 +8,7 @@
 #![warn(clippy::empty_line_after_doc_comments)]
 #![warn(clippy::pedantic)]
 #![forbid(rustdoc::broken_intra_doc_links)]
-//#![forbid(missing_debug_implementations)]
+#![forbid(missing_debug_implementations)]
 #![forbid(invalid_doc_attributes)]
 
 pub mod context;
