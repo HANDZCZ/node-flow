@@ -16,6 +16,8 @@ macro_rules! define_builder {
             nodes: NodeTypes,
         }
 
+        $crate::flows::generic_defs::debug::impl_debug_for_builder!(stringify!($flow_name), Builder $(,$global_param: $global_bound0 $(+$global_bound)*)*);
+
         impl<Input, Output, Error, Context> Default for Builder<Input, Output, Error, Context>
         where
             // Trait bounds for better and nicer errors

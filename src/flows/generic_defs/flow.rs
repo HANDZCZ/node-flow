@@ -11,6 +11,8 @@ macro_rules! define_flow {
             pub(super) nodes: std::sync::Arc<NodeTypes>,
         }
 
+        $crate::flows::generic_defs::debug::impl_debug_for_flow!(stringify!($flow_name), $flow_name);
+
         impl<Input, Output, Error, Context, NodeTypes, NodeIOETypes> Clone
             for $flow_name<Input, Output, Error, Context, NodeTypes, NodeIOETypes>
         {
