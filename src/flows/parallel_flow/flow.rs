@@ -1,7 +1,9 @@
+use std::fmt::Debug;
+
 use super::Builder;
 use super::chain_run::ChainRunParallel as ChainRun;
 use crate::{
-    flows::{NodeResult, parallel_flow::Joiner},
+    flows::{NodeResult, chain_debug::ChainDebug, parallel_flow::Joiner},
     node::{Node, NodeOutput as NodeOutputStruct},
 };
 
@@ -48,6 +50,18 @@ where
             _joiner_input: std::marker::PhantomData,
             joiner: self.joiner.clone(),
         }
+    }
+}
+
+impl<Input, Output, Error, Context, ChainRunOutput, J, NodeTypes, NodeIOETypes> Debug
+    for ParallelFlow<Input, Output, Error, Context, ChainRunOutput, J, NodeTypes, NodeIOETypes>
+where
+    NodeTypes: ChainDebug,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ParallelFlow")
+            .field("nodes", &self.nodes.as_list())
+            .finish_non_exhaustive()
     }
 }
 

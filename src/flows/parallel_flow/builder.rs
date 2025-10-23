@@ -4,6 +4,7 @@ use super::ParallelFlow as Flow;
 use crate::{
     flows::{
         ChainLink, NodeIOE,
+        generic_defs::debug::impl_debug_for_builder,
         parallel_flow::{Joiner, chain_run::ChainRunParallel as ChainRun},
     },
     node::{Node, NodeOutput as NodeOutputStruct},
@@ -20,6 +21,13 @@ where
     _nodes_io: PhantomData<fn() -> NodeIOETypes>,
     nodes: NodeTypes,
 }
+
+impl_debug_for_builder!(
+    "ParallelFlow",
+    Builder,
+    Input: Send + Clone,
+    Error: Send
+);
 
 impl<Input, Output, Error, Context> Default for Builder<Input, Output, Error, Context>
 where

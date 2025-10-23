@@ -2,7 +2,7 @@ use std::{marker::PhantomData, sync::Arc};
 
 use super::SequentialFlow as Flow;
 use crate::{
-    flows::{ChainLink, NodeIOE},
+    flows::{ChainLink, NodeIOE, generic_defs::debug::impl_debug_for_builder},
     node::{Node, NodeOutput as NodeOutputStruct},
 };
 
@@ -17,6 +17,13 @@ where
     _nodes_io: PhantomData<fn() -> NodeIOETypes>,
     nodes: NodeTypes,
 }
+
+impl_debug_for_builder!(
+    "SequentialFlow",
+    Builder,
+    Input: Send,
+    Error: Send
+);
 
 impl<Input, Output, Error, Context> Default for Builder<Input, Output, Error, Context>
 where
