@@ -1,6 +1,7 @@
 use std::{
     any::{Any, TypeId},
     collections::{HashMap, HashSet},
+    fmt::Debug,
 };
 
 use crate::context::{
@@ -54,6 +55,12 @@ impl Clone for Box<dyn StorageItem> {
 pub struct LocalStorageImpl {
     inner: HashMap<TypeId, Box<dyn StorageItem>>,
     changed: HashSet<TypeId>,
+}
+
+impl Debug for LocalStorageImpl {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("LocalStorageImpl").finish_non_exhaustive()
+    }
 }
 
 impl LocalStorageImpl {

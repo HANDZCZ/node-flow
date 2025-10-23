@@ -20,6 +20,7 @@ pub trait LocalStorage {
         T: 'static;
 }
 
+#[derive(Debug)]
 pub enum MergeResult<T> {
     KeepParent,
     ReplaceOrInsert(T),
