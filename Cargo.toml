@@ -7,6 +7,7 @@ description = "A crate that provides flows for nodes"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
+async-lock = "^3.4.1"
 futures-util = { version = "^0.3.31", default-features = false }
 
 [dev-dependencies]
