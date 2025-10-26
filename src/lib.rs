@@ -10,6 +10,7 @@
 #![forbid(rustdoc::broken_intra_doc_links)]
 #![forbid(missing_debug_implementations)]
 #![forbid(invalid_doc_attributes)]
+#![cfg_attr(all(doc, not(doctest)), feature(doc_cfg))]
 
 pub mod context;
 pub mod flows;
