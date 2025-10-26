@@ -13,6 +13,7 @@
 #![cfg_attr(all(doc, not(doctest)), feature(doc_cfg))]
 
 pub mod context;
+pub mod describe;
 pub mod flows;
 mod future_utils;
 pub mod node;
