@@ -1,11 +1,24 @@
 mod chain_run;
 
-use crate::flows::generic_defs::define_flow_and_ioe_conv_builder;
+use crate::{
+    describe::{Description, Edge, remove_generics_from_name},
+    flows::{chain_describe::ChainDescribe, generic_defs::define_flow_and_ioe_conv_builder},
+};
 use chain_run::ChainRunOneOfSequential as ChainRun;
 
 define_flow_and_ioe_conv_builder!(
     OneOfSequentialFlow,
     ChainRun,
+    |self| {
+        let node_count = <NodeTypes as ChainDescribe<Context, NodeIOETypes>>::COUNT;
+        let mut node_descriptions = Vec::with_capacity(node_count);
+        self.nodes.describe(&mut node_descriptions);
+        let edges = (0..node_count)
+            .flat_map(|i| [Edge::flow_to_node(i), Edge::node_to_flow(i)])
+            .collect::<Vec<_>>();
+
+        Description::new_flow(self, node_descriptions, edges).modify_name(remove_generics_from_name)
+    },
     >Input: Send + Clone,
     #NodeType: Send + Sync + Clone
     /// Docs :)
