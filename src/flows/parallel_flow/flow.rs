@@ -3,7 +3,10 @@ use std::fmt::Debug;
 use super::Builder;
 use super::chain_run::ChainRunParallel as ChainRun;
 use crate::{
-    flows::{NodeResult, chain_debug::ChainDebug, parallel_flow::Joiner},
+    describe::{Description, DescriptionBase, Edge, Type, remove_generics_from_name},
+    flows::{
+        NodeResult, chain_debug::ChainDebug, chain_describe::ChainDescribe, parallel_flow::Joiner,
+    },
     node::{Node, NodeOutput as NodeOutputStruct},
 };
 
@@ -86,7 +89,10 @@ where
     Input: Send,
     Context: Send,
     for<'a> J: Joiner<'a, ChainRunOutput, Output, Error, Context>,
-    NodeTypes: ChainRun<Input, Result<ChainRunOutput, Error>, Context, NodeIOETypes> + Send + Sync,
+    NodeTypes: ChainRun<Input, Result<ChainRunOutput, Error>, Context, NodeIOETypes>
+        + ChainDescribe<Context, NodeIOETypes>
+        + Send
+        + Sync,
 {
     fn run(
         &mut self,
@@ -101,6 +107,43 @@ where
             // workaround for https://github.com/rust-lang/rust/issues/100013
             call_joiner::<J, ChainRunOutput, Output, Error, Context>(joiner, res, context).await
         }
+    }
+
+    fn describe(&self) -> Description {
+        let node_count = <NodeTypes as ChainDescribe<Context, NodeIOETypes>>::COUNT;
+        let mut node_descriptions = Vec::with_capacity(node_count + 1);
+        self.nodes.describe(&mut node_descriptions);
+
+        node_descriptions.push(Description::Node {
+            base: DescriptionBase {
+                r#type: Type {
+                    name: "Joiner".to_owned(),
+                },
+                input: Type {
+                    name: String::new(),
+                },
+                output: Type {
+                    name: String::new(),
+                },
+                error: Type {
+                    name: String::new(),
+                },
+                context: Type {
+                    name: String::new(),
+                },
+                description: None,
+                externals: None,
+            },
+        });
+
+        let mut edges = Vec::with_capacity(node_count * 2 + 1);
+        for i in 0..node_count {
+            edges.push(Edge::flow_to_node(i));
+            edges.push(Edge::node_to_node(i, node_count));
+        }
+        edges.push(Edge::node_to_flow(node_count));
+
+        Description::new_flow(self, node_descriptions, edges).modify_name(remove_generics_from_name)
     }
 }
 
