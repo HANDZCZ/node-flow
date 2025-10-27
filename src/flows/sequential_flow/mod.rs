@@ -2,12 +2,29 @@ mod builder;
 pub use builder::*;
 mod chain_run;
 
-use crate::flows::generic_defs::flow::define_flow;
+use crate::{
+    describe::{Description, Edge, remove_generics_from_name},
+    flows::{chain_describe::ChainDescribe, generic_defs::flow::define_flow},
+};
 use chain_run::ChainRunSequential as ChainRun;
 
 define_flow!(
     SequentialFlow,
     ChainRun,
+    |self| {
+        let node_count = <NodeTypes as ChainDescribe<Context, NodeIOETypes>>::COUNT;
+        let mut node_descriptions = Vec::with_capacity(node_count);
+        self.nodes.describe(&mut node_descriptions);
+
+        let mut edges = Vec::with_capacity(node_count + 1);
+        edges.push(Edge::flow_to_node(0));
+        for i in 0..node_count - 1 {
+            edges.push(Edge::node_to_node(i, i + 1));
+        }
+        edges.push(Edge::node_to_flow(node_count - 1));
+
+        Description::new_flow(self, node_descriptions, edges).modify_name(remove_generics_from_name)
+    },
     Input: Send,
     Error: Send,
     /// Docs :)
