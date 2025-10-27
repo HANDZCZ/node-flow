@@ -1,4 +1,5 @@
 mod chain_debug;
+mod chain_describe;
 mod generic_defs;
 pub mod sequential_flow;
 pub use sequential_flow::SequentialFlow;
