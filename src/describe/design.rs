@@ -2,7 +2,7 @@ use std::any::type_name;
 
 use crate::node::{Node, NodeOutput};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Description {
     Node {
         base: DescriptionBase,
@@ -71,7 +71,7 @@ impl Description {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DescriptionBase {
     pub r#type: Type,
     pub input: Type,
@@ -117,7 +117,7 @@ impl DescriptionBase {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Type {
     pub name: String,
 }
@@ -142,13 +142,13 @@ impl Type {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Edge {
     pub start: EdgeEnding,
     pub end: EdgeEnding,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum EdgeEnding {
     ToFlow,
     ToNode { node_index: usize },
@@ -193,7 +193,7 @@ impl Edge {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ExternalResource {
     pub r#type: Type,
     pub description: Option<String>,
