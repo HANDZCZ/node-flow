@@ -37,6 +37,31 @@ pub enum NodeOutput<T> {
     Ok(T),
 }
 
+impl<T> NodeOutput<T> {
+    pub fn ok(self) -> Option<T> {
+        match self {
+            NodeOutput::SoftFail => None,
+            NodeOutput::Ok(val) => Some(val),
+        }
+    }
+
+    #[allow(clippy::missing_errors_doc)]
+    pub fn ok_or<E>(self, err: E) -> Result<T, E> {
+        match self {
+            NodeOutput::SoftFail => Err(err),
+            NodeOutput::Ok(val) => Ok(val),
+        }
+    }
+
+    #[allow(clippy::missing_errors_doc)]
+    pub fn ok_or_else<E>(self, err: impl Fn() -> E) -> Result<T, E> {
+        match self {
+            NodeOutput::SoftFail => Err(err()),
+            NodeOutput::Ok(val) => Ok(val),
+        }
+    }
+}
+
 #[macro_export]
 macro_rules! impl_node_output {
     ($node:ty, $input:ty, $output:ty, $error:ty $(,$param:ident: $bound0:ident $(+$bound:ident)*)*) => {
