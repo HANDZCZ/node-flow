@@ -17,6 +17,7 @@ impl<I, O, E> Clone for TestNode<I, O, E> {
 
 // SomeData
 unsafe impl Send for SomeData {}
+unsafe impl Sync for SomeData {}
 impl Clone for SomeData {
     fn clone(&self) -> Self {
         unimplemented!()
@@ -262,12 +263,57 @@ async fn test_parallel_flow() {
 }
 
 // ----------------------------------------------------------------------------------------------------------------
+
+// FnFlow
+
+// #[cfg(doc)]
+async fn test_fn_flow() {
+    let mut storage = LocalStorageImpl::new();
+
+    // IOE test
+    let _res = FnFlow::<SomeData, (), (), _>::new(
+        (5u8, String::new(), 120usize),
+        async |_, _, _: &mut LocalStorageImpl| Ok(NodeOutput::SoftFail),
+    )
+    .run(().into(), &mut storage)
+    .await;
+    let _res = FnFlow::<(), SomeData, (), _>::new(
+        (5u8, String::new(), 120usize),
+        async |_, _, _: &mut LocalStorageImpl| Ok(NodeOutput::SoftFail),
+    )
+    .run((), &mut storage)
+    .await;
+    let _res = FnFlow::<(), (), SomeData, _>::new(
+        (5u8, String::new(), 120usize),
+        async |_, _, _: &mut LocalStorageImpl| Ok(NodeOutput::SoftFail),
+    )
+    .run((), &mut storage)
+    .await;
+
+    // Context test
+    let _res = FnFlow::<(), (), (), _>::new(
+        (5u8, String::new(), 120usize),
+        async |_, _, _: &mut DummyContext| Ok(NodeOutput::SoftFail),
+    )
+    .run((), &mut DummyContext::new())
+    .await;
+
+    // Inner data test
+    let _res = FnFlow::<(), (), (), _>::new(
+        (5u8, String::new(), 120usize, SomeData::new()),
+        async |_, _, _: &mut LocalStorageImpl| Ok(NodeOutput::SoftFail),
+    )
+    .run((), &mut storage)
+    .await;
+}
+
+// ----------------------------------------------------------------------------------------------------------------
 // Type defs
 
 use defs::*;
 use node_flow::{
     context::{Fork, Join, Update, storage::local_storage::LocalStorageImpl},
-    flows::{OneOfParallelFlow, OneOfSequentialFlow, ParallelFlow, SequentialFlow},
+    flows::{FnFlow, OneOfParallelFlow, OneOfSequentialFlow, ParallelFlow, SequentialFlow},
     node::{Node, NodeOutput},
 };
 mod defs {
@@ -277,6 +323,11 @@ mod defs {
 
     // Some type that doesn't implement Send, Sync and Clone
     pub struct SomeData(UnsafeCell<*const ()>);
+    impl SomeData {
+        pub fn new() -> Self {
+            unimplemented!()
+        }
+    }
     impl From<()> for SomeData {
         fn from(value: ()) -> Self {
             unimplemented!()
