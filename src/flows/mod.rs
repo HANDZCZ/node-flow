@@ -9,6 +9,8 @@ pub mod one_of_parallel_flow;
 pub use one_of_parallel_flow::OneOfParallelFlow;
 pub mod parallel_flow;
 pub use parallel_flow::ParallelFlow;
+pub mod fn_flow;
+pub use fn_flow::FnFlow;
 
 use crate::node::NodeOutput;
 type NodeIOE<Input, Output, Error> = (Input, NodeOutput<Output>, Error);
