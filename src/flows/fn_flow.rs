@@ -40,7 +40,12 @@ pub struct FnFlow<Input, Output, Error, Context, InnerData = (), R = ()> {
     runner_description: Option<std::sync::Arc<Description>>,
     runner: R,
 }
-impl<Input, Output, Error, Context> FnFlow<Input, Output, Error, Context> {
+impl<Input, Output, Error, Context> FnFlow<Input, Output, Error, Context>
+where
+    // Trait bounds for better and nicer errors
+    Input: Send,
+    Context: Send,
+{
     // TODO: mention signature issue in docs (&mut Context must be present, it needs to be async closure and inner data must also be present: async |data: ..., _, _: &mut Context| {...})
     pub fn new<InnerData, R>(
         inner_data: InnerData,
