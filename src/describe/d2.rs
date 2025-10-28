@@ -1,7 +1,7 @@
 use super::design::{Description, Edge, EdgeEnding, ExternalResource, Type};
 use std::{borrow::Cow, fmt::Write};
 
-#[allow(clippy::struct_excessive_bools)]
+#[expect(clippy::struct_excessive_bools)]
 #[derive(Debug)]
 pub struct D2Describer {
     pub simple_type_name: bool,

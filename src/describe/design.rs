@@ -26,7 +26,7 @@ impl Description {
     }
 
     #[must_use]
-    pub fn new_flow<N, I, O, E, C>(node: &N, nodes: Vec<Description>, edges: Vec<Edge>) -> Self
+    pub fn new_flow<N, I, O, E, C>(node: &N, nodes: Vec<Self>, edges: Vec<Edge>) -> Self
     where
         N: Node<I, NodeOutput<O>, E, C>,
     {
@@ -38,16 +38,16 @@ impl Description {
     }
 
     #[must_use]
-    pub fn get_base_mut(&mut self) -> &mut DescriptionBase {
+    pub const fn get_base_mut(&mut self) -> &mut DescriptionBase {
         match self {
-            Description::Node { base } | Description::Flow { base, .. } => base,
+            Self::Node { base } | Self::Flow { base, .. } => base,
         }
     }
 
     #[must_use]
-    pub fn get_base_ref(&self) -> &DescriptionBase {
+    pub const fn get_base_ref(&self) -> &DescriptionBase {
         match self {
-            Description::Node { base } | Description::Flow { base, .. } => base,
+            Self::Node { base } | Self::Flow { base, .. } => base,
         }
     }
 
@@ -156,14 +156,14 @@ pub enum EdgeEnding {
 
 impl Edge {
     #[must_use]
-    pub fn passthrough() -> Self {
+    pub const fn passthrough() -> Self {
         Self {
             start: EdgeEnding::ToFlow,
             end: EdgeEnding::ToFlow,
         }
     }
     #[must_use]
-    pub fn flow_to_node(node_idx: usize) -> Self {
+    pub const fn flow_to_node(node_idx: usize) -> Self {
         Self {
             start: EdgeEnding::ToFlow,
             end: EdgeEnding::ToNode {
@@ -172,7 +172,7 @@ impl Edge {
         }
     }
     #[must_use]
-    pub fn node_to_flow(node_idx: usize) -> Self {
+    pub const fn node_to_flow(node_idx: usize) -> Self {
         Self {
             start: EdgeEnding::ToNode {
                 node_index: node_idx,
@@ -181,7 +181,7 @@ impl Edge {
         }
     }
     #[must_use]
-    pub fn node_to_node(start_node_idx: usize, end_node_idx: usize) -> Self {
+    pub const fn node_to_node(start_node_idx: usize, end_node_idx: usize) -> Self {
         Self {
             start: EdgeEnding::ToNode {
                 node_index: start_node_idx,

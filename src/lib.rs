@@ -8,6 +8,7 @@
     clippy::empty_docs,
     clippy::pedantic,
     clippy::all,
+    clippy::nursery
 )]
 #![forbid(
     rustdoc::broken_intra_doc_links,

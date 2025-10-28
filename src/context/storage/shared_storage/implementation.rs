@@ -97,8 +97,7 @@ impl SharedStorage for SharedStorageImpl {
         };
 
         async move {
-            let mut rw_lock_guard = rw_lock.write().await;
-            let val = rw_lock_guard.replace(Box::new(val))?;
+            let val = rw_lock.write().await.replace(Box::new(val))?;
             let val = *val.downcast::<T>().unwrap();
             Some(val)
         }
@@ -141,8 +140,7 @@ impl SharedStorage for SharedStorageImpl {
 
         async move {
             let rw_lock = rw_lock?;
-            let mut rw_lock_guard = rw_lock.write().await;
-            let val = rw_lock_guard.take()?;
+            let val = rw_lock.write().await.take()?;
             let val = *val.downcast::<T>().unwrap();
             Some(val)
         }

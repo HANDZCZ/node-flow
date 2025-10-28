@@ -42,7 +42,6 @@ macro_rules! define_builder {
                 }
             }
 
-            #[allow(clippy::type_complexity)]
             pub fn add_node<NodeType, NodeInput, NodeOutput, NodeError>(
                 self,
                 node: NodeType,
@@ -87,7 +86,6 @@ macro_rules! define_builder {
             // Trait bounds for better and nicer errors
             $($global_param: $global_bound0 $(+$global_bound)*,)*
         {
-            #[allow(clippy::type_complexity)]
             pub fn add_node<NodeType, NodeInput, NodeOutput, NodeError>(
                 self,
                 node: NodeType,

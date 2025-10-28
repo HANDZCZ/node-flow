@@ -16,7 +16,7 @@ where
     Input: Send + Clone,
     Error: Send,
 {
-    #[allow(clippy::type_complexity)]
+    #[expect(clippy::type_complexity)]
     _ioec: PhantomData<fn() -> (Input, Output, Error, Context)>,
     _nodes_io: PhantomData<fn() -> NodeIOETypes>,
     nodes: NodeTypes,
@@ -55,7 +55,7 @@ where
         }
     }
 
-    #[allow(clippy::type_complexity)]
+    #[expect(clippy::type_complexity, clippy::type_repetition_in_bounds)]
     pub fn add_node<NodeType, NodeInput, NodeOutput, NodeError>(
         self,
         node: NodeType,
@@ -98,7 +98,7 @@ where
     Error: Send,
     Context: Send,
 {
-    #[allow(clippy::type_complexity)]
+    #[expect(clippy::type_complexity, clippy::type_repetition_in_bounds)]
     pub fn add_node<NodeType, NodeInput, NodeOutput, NodeError>(
         self,
         node: NodeType,
@@ -129,7 +129,6 @@ where
     }
 
     // TODO: mention signature issue in docs (&mut Context must be present and it needs to be async closure: async |_, _: &mut Context| {...})
-    #[allow(clippy::type_complexity)]
     pub fn build<J, ChainRunOutput>(
         self,
         joiner: J,

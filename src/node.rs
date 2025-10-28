@@ -40,24 +40,24 @@ pub enum NodeOutput<T> {
 impl<T> NodeOutput<T> {
     pub fn ok(self) -> Option<T> {
         match self {
-            NodeOutput::SoftFail => None,
-            NodeOutput::Ok(val) => Some(val),
+            Self::SoftFail => None,
+            Self::Ok(val) => Some(val),
         }
     }
 
-    #[allow(clippy::missing_errors_doc)]
+    #[expect(clippy::missing_errors_doc)]
     pub fn ok_or<E>(self, err: E) -> Result<T, E> {
         match self {
-            NodeOutput::SoftFail => Err(err),
-            NodeOutput::Ok(val) => Ok(val),
+            Self::SoftFail => Err(err),
+            Self::Ok(val) => Ok(val),
         }
     }
 
-    #[allow(clippy::missing_errors_doc)]
+    #[expect(clippy::missing_errors_doc)]
     pub fn ok_or_else<E>(self, err: impl Fn() -> E) -> Result<T, E> {
         match self {
-            NodeOutput::SoftFail => Err(err()),
-            NodeOutput::Ok(val) => Ok(val),
+            Self::SoftFail => Err(err()),
+            Self::Ok(val) => Ok(val),
         }
     }
 }

@@ -17,9 +17,8 @@ pub trait Joiner<'a, Input, Output, Error, Context>: Send + Sync {
 impl<'a, Input, Output, Error, Context, T, F> Joiner<'a, Input, Output, Error, Context> for T
 where
     Input: Send,
-    T: Send + Sync,
     F: Future<Output = NodeResult<Output, Error>> + Send + 'a,
-    T: Fn(Input, &'a mut Context) -> F,
+    T: Fn(Input, &'a mut Context) -> F + Send + Sync,
     Context: 'a,
 {
     fn join(

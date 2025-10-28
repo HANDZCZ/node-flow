@@ -158,7 +158,7 @@ impl Join for LocalStorageImpl {
 
             // decide if and how the items are merged
             // allow match_same_arms for comments
-            #[allow(clippy::match_same_arms)]
+            #[expect(clippy::match_same_arms)]
             match (parent.is_none(), other_items.is_empty()) {
                 // parent and other_items are empty
                 //     => item was inserted in a branch and then removed
@@ -195,10 +195,7 @@ impl Join for LocalStorageImpl {
             // Merge trait is needed for merging
             let res = {
                 // All types (inside of a `parent` and `other_items[...]`) have the same type
-                let dispatcher: &dyn StorageItem = match parent {
-                    Some(p) => p,
-                    None => &*other_items[0],
-                };
+                let dispatcher: &dyn StorageItem = parent.map_or_else(|| &*other_items[0], |p| p);
 
                 // Call merge on dyn StorageItem type
                 // SAFETY: reference is only used for VTable lookup, the self type is otherwise unused,

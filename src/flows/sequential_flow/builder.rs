@@ -12,7 +12,7 @@ where
     Input: Send,
     Error: Send,
 {
-    #[allow(clippy::type_complexity)]
+    #[expect(clippy::type_complexity)]
     _ioec: PhantomData<fn() -> (Input, Output, Error, Context)>,
     _nodes_io: PhantomData<fn() -> NodeIOETypes>,
     nodes: NodeTypes,
@@ -52,7 +52,7 @@ where
         }
     }
 
-    #[allow(clippy::type_complexity)]
+    #[expect(clippy::type_complexity, clippy::type_repetition_in_bounds)]
     pub fn add_node<NodeType, NodeInput, NodeOutput, NodeError>(
         self,
         node: NodeType,
@@ -104,7 +104,7 @@ where
     Input: Send,
     Error: Send,
 {
-    #[allow(clippy::type_complexity)]
+    #[expect(clippy::type_complexity, clippy::type_repetition_in_bounds)]
     pub fn add_node<NodeType, NodeInput, NodeOutput, NodeError>(
         self,
         node: NodeType,
@@ -134,7 +134,7 @@ where
         }
     }
 
-    #[allow(clippy::type_complexity)]
+    #[expect(clippy::type_complexity)]
     pub fn build(
         self,
     ) -> Flow<

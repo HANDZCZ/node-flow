@@ -20,7 +20,7 @@ pub struct ParallelFlow<
     NodeTypes = (),
     NodeIOETypes = (),
 > {
-    #[allow(clippy::type_complexity)]
+    #[expect(clippy::type_complexity)]
     pub(super) _ioec: std::marker::PhantomData<fn() -> (Input, Output, Error, Context)>,
     pub(super) _nodes_io: std::marker::PhantomData<fn() -> NodeIOETypes>,
     pub(super) nodes: std::sync::Arc<NodeTypes>,
@@ -70,7 +70,7 @@ where
 
 // workaround for https://github.com/rust-lang/rust/issues/100013
 #[inline(always)]
-#[allow(clippy::inline_always)]
+#[expect(clippy::inline_always)]
 fn call_joiner<'a, J, I, O, E, Ctx>(
     j: &J,
     i: I,
