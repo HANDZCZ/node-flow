@@ -27,3 +27,13 @@ macro_rules! impl_node_output {
         }
     };
 }
+
+#[macro_export]
+macro_rules! node {
+    ($input:ty, !$output:ty, $error:ty, $context:ty) => {
+        impl $crate::node::Node<$input, $output, $error, $context> + Clone + Send + Sync
+    };
+    ($input:ty, $output:ty, $error:ty, $context:ty) => {
+        $crate::node!($input, !$crate::node::NodeOutput<$output>, $error, $context)
+    };
+}
