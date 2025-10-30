@@ -15,11 +15,15 @@ pub struct Detached<Input, Error, Context, NodeType = (), NodeOutput = (), NodeE
 }
 
 impl<Input, Error, Context> Detached<Input, Error, Context> {
+    #[expect(clippy::type_repetition_in_bounds)]
     pub fn new<NodeType, NodeOutput, NodeError>(
         node: NodeType,
     ) -> Detached<Input, Error, Context, NodeType, NodeOutput, NodeError>
     where
         NodeType: Node<Input, NodeOutput, NodeError, Context>,
+        // Trait bounds for better and nicer errors
+        NodeType: Clone + Send,
+        Input: Clone + Send,
     {
         Detached {
             _iec: std::marker::PhantomData,
