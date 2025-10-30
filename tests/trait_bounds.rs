@@ -41,6 +41,15 @@ impl Join for DummyContext {
         unimplemented!()
     }
 }
+impl SpawnAsync for DummyContext {
+    fn spawn<F>(fut: F) -> impl Task<F::Output>
+    where
+        F: Future + Send + 'static,
+        F::Output: Send + 'static,
+    {
+        defs::SpawnedTask(std::marker::PhantomData)
+    }
+}
 
 // ----------------------------------------------------------------------------------------------------------------
 
@@ -308,18 +317,51 @@ async fn test_fn_flow() {
 }
 
 // ----------------------------------------------------------------------------------------------------------------
+
+// Detached
+
+// #[cfg(doc)]
+async fn test_detached() {
+    let mut storage = DummyContext::new();
+
+    // Node test
+    let _res = Detached::<(), (), _>::new(TestNode::<_, ()>::new())
+        .run(().into(), &mut storage)
+        .await;
+
+    // IOE test
+    let _res = Detached::<SomeData, (), _>::new(TestNode::<_, ()>::new())
+        .run(().into(), &mut storage)
+        .await;
+    let _res = Detached::<(), SomeData, _>::new(TestNode::<_, ()>::new())
+        .run((), &mut storage)
+        .await;
+
+    // Context test
+    let _res = Detached::<(), (), _>::new(TestNode::<_, ()>::new())
+        .run((), &mut DummyContext::new())
+        .await;
+}
+
+// ----------------------------------------------------------------------------------------------------------------
 // Type defs
 
 use defs::*;
 use node_flow::{
-    context::{Fork, Join, Update, storage::local_storage::LocalStorageImpl},
-    flows::{FnFlow, OneOfParallelFlow, OneOfSequentialFlow, ParallelFlow, SequentialFlow},
+    context::{Fork, Join, SpawnAsync, Task, Update, storage::local_storage::LocalStorageImpl},
+    flows::{
+        self, Detached, FnFlow, OneOfParallelFlow, OneOfSequentialFlow, ParallelFlow,
+        SequentialFlow,
+    },
     node::{Node, NodeOutput},
 };
 mod defs {
     use std::{cell::UnsafeCell, marker::PhantomData};
 
-    use node_flow::node::{Node, NodeOutput};
+    use node_flow::{
+        context::Task,
+        node::{Node, NodeOutput},
+    };
 
     // Some type that doesn't implement Send, Sync and Clone
     pub struct SomeData(UnsafeCell<*const ()>);
@@ -363,6 +405,27 @@ mod defs {
     impl DummyContext {
         pub fn new() -> Self {
             unimplemented!()
+        }
+    }
+
+    pub struct SpawnedTask<T>(pub PhantomData<T>);
+    impl<T> Task<T> for SpawnedTask<T> {
+        fn is_finished(&self) -> bool {
+            todo!()
+        }
+
+        fn cancel(self) {
+            todo!()
+        }
+    }
+    impl<T> Future for SpawnedTask<T> {
+        type Output = T;
+
+        fn poll(
+            self: std::pin::Pin<&mut Self>,
+            cx: &mut std::task::Context<'_>,
+        ) -> std::task::Poll<Self::Output> {
+            todo!()
         }
     }
 }
