@@ -5,7 +5,7 @@ use crate::{
     node::{Node, NodeOutput},
 };
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Passer<I, O, E>(PhantomData<(I, O, E)>);
 
 impl<I, O, E> Passer<I, O, E> {
@@ -27,7 +27,7 @@ where
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct SoftFailNode<I, O, E>(PhantomData<(I, O, E)>);
 
 impl<I, O, E> SoftFailNode<I, O, E> {
@@ -48,7 +48,7 @@ where
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct InsertIntoStorageAssertWasNotInStorage<I, O, E, T>(PhantomData<(I, O, E, T)>);
 
 impl<I, O, E, T> InsertIntoStorageAssertWasNotInStorage<I, O, E, T> {

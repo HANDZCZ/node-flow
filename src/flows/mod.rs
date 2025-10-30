@@ -20,4 +20,4 @@ type ChainLink<Head, Tail> = (Head, Tail);
 type NodeResult<Output, Error> = Result<NodeOutput<Output>, Error>;
 
 #[cfg(test)]
-mod tests;
+pub mod tests;
