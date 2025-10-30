@@ -8,6 +8,7 @@ license = "MIT OR Apache-2.0"
 
 [dependencies]
 async-lock = { version = "^3.4.1", optional = true }
+async-trait = { version = "^0.1.89", optional = true }
 futures-util = { version = "^0.3.31", default-features = false }
 rand = { version = "^0.9.2", optional = true }
 tynm = { version = "^0.2.0", optional = true }
@@ -22,3 +23,4 @@ local_storage_impl = []
 shared_storage_impl = ["dep:async-lock"]
 describe_get_name_simple = ["dep:tynm"]
 d2descriptor = ["describe_get_name_simple", "dep:rand"]
+boxed_node = ["dep:async-trait"]
