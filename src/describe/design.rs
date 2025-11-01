@@ -202,11 +202,11 @@ pub struct ExternalResource {
 
 impl ExternalResource {
     #[must_use]
-    pub fn new<T, O>() -> Self {
+    pub fn new<ResourceType, Output>() -> Self {
         Self {
-            r#type: Type::of::<T>(),
+            r#type: Type::of::<ResourceType>(),
             description: None,
-            output: Type::of::<T>(),
+            output: Type::of::<Output>(),
         }
     }
 
