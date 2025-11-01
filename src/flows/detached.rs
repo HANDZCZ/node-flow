@@ -127,8 +127,6 @@ mod test {
         let (sender, mut receiver) = tokio::sync::mpsc::channel(5);
         let mut ctx = TokioSpawner;
         let mut flow = Detached::<_, (), _>::new(TestNode(sender));
-        let aa = crate::describe::D2Describer::new().format(&flow.describe());
-        println!("{aa}");
 
         let sleep = tokio::time::sleep(Duration::from_millis(50));
         tokio::pin!(sleep);
