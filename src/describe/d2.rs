@@ -1,12 +1,59 @@
 use super::design::{Description, Edge, EdgeEnding, ExternalResource, Type};
 use std::{borrow::Cow, fmt::Write};
 
+/// A configurable formatter for converting [`Description`] structures into
+/// [D2](https://d2lang.com/) graph syntax.
+///
+/// # Examples
+///
+/// ```
+/// use node_flow::describe::{Description, D2Describer};
+/// use node_flow::node::{Node, NodeOutput};
+/// use node_flow::flows::FnFlow;
+///
+/// # struct ExampleNode;
+/// #
+/// # impl Node<i32, NodeOutput<String>, (), ()> for ExampleNode {
+/// #     async fn run(
+/// #         &mut self,
+/// #         input: i32,
+/// #         _context: &mut (),
+/// #     ) -> Result<NodeOutput<String>, ()> {
+/// #         Ok(NodeOutput::Ok(format!("Processed: {}", input)))
+/// #     }
+/// # }
+/// let flow = ExampleNode;
+/// let some_description = flow.describe();
+///
+/// let mut describer = D2Describer::new();
+/// describer.modify(|cfg| {
+///     cfg.show_description = true;
+///     cfg.show_externals = true;
+/// });
+///
+/// let d2_code = describer.format(&some_description);
+/// println!("{}", d2_code);
+/// // Output could be fed to a D2 renderer for visualization.
+/// ```
 #[expect(clippy::struct_excessive_bools)]
 #[derive(Debug)]
 pub struct D2Describer {
+    /// Whether to display simplified type names instead of full paths.
+    ///
+    /// When enabled, types like `my_crate::nodes::ExampleNode` become `ExampleNode`.
+    /// This makes diagrams more readable, especially for complex flows.
     pub simple_type_name: bool,
+    /// Whether to display the node context type inside each node.
+    ///
+    /// When enabled, context will be added to node's description.
     pub show_context_in_node: bool,
+    /// Whether to include the node's description.
+    ///
+    /// When enabled, description will be included in the node.
     pub show_description: bool,
+    /// Whether to include information about external resources.
+    ///
+    /// When enabled, external resources will be included in the node.
     pub show_externals: bool,
 }
 
@@ -29,11 +76,29 @@ fn escape_str(val: &str) -> String {
 }
 
 impl D2Describer {
+    /// Creates a new [`D2Describer`] using default configuration.
+    ///
+    /// Default settings:
+    /// - `simple_type_name`: `true`
+    /// - `show_context_in_node`: `false`
+    /// - `show_description`: `false`
+    /// - `show_externals`: `false`
     #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
 
+    /// Allows modification of the configuration using a closure.
+    ///
+    /// # Examples
+    /// ```
+    /// # use node_flow::describe::D2Describer;
+    /// let mut describer = D2Describer::new();
+    /// describer.modify(|cfg| {
+    ///     cfg.show_description = true;
+    ///     cfg.show_externals = true;
+    /// });
+    /// ```
     pub fn modify(&mut self, func: impl FnOnce(&mut Self)) -> &mut Self {
         func(self);
         self
@@ -56,6 +121,16 @@ impl D2Describer {
         }
     }
 
+    /// Formats a [`Description`] into a D2 diagram text representation.
+    ///
+    /// The resulting string can be passed directly to the D2 CLI or rendered using
+    /// the [D2 playground](https://play.d2lang.com/).
+    ///
+    /// # Parameters
+    /// - `desc`: The [`Description`] to be rendered.
+    ///
+    /// # Returns
+    /// A string containing valid D2 source code representing the description graph.
     #[must_use]
     pub fn format(&self, desc: &Description) -> String {
         let id = rand::random();
