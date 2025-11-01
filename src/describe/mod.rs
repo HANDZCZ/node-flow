@@ -1,9 +1,9 @@
 mod design;
 pub use design::*;
 
-#[cfg(feature = "d2descriptor")]
+#[cfg(feature = "d2describer")]
 mod d2;
-#[cfg(feature = "d2descriptor")]
+#[cfg(feature = "d2describer")]
 pub use d2::*;
 
 pub(crate) fn remove_generics_from_name(orig_name: &mut String) {
