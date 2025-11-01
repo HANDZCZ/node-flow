@@ -16,9 +16,9 @@ pub enum Description {
 
 impl Description {
     #[must_use]
-    pub fn new_node<N, I, O, E, C>(node: &N) -> Self
+    pub fn new_node<NodeType, Input, Output, Error, Context>(node: &NodeType) -> Self
     where
-        N: Node<I, NodeOutput<O>, E, C>,
+        NodeType: Node<Input, NodeOutput<Output>, Error, Context>,
     {
         Self::Node {
             base: DescriptionBase::from_node(node),
@@ -26,9 +26,13 @@ impl Description {
     }
 
     #[must_use]
-    pub fn new_flow<N, I, O, E, C>(node: &N, nodes: Vec<Self>, edges: Vec<Edge>) -> Self
+    pub fn new_flow<NodeType, Input, Output, Error, Context>(
+        node: &NodeType,
+        nodes: Vec<Self>,
+        edges: Vec<Edge>,
+    ) -> Self
     where
-        N: Node<I, NodeOutput<O>, E, C>,
+        NodeType: Node<Input, NodeOutput<Output>, Error, Context>,
     {
         Self::Flow {
             base: DescriptionBase::from_node(node),
@@ -84,24 +88,24 @@ pub struct DescriptionBase {
 
 impl DescriptionBase {
     #[must_use]
-    pub fn from<N, I, O, E, C>() -> Self {
+    pub fn from<NodeType, Input, Output, Error, Context>() -> Self {
         Self {
-            r#type: Type::of::<N>(),
-            input: Type::of::<I>(),
-            output: Type::of::<O>(),
-            error: Type::of::<E>(),
-            context: Type::of::<C>(),
+            r#type: Type::of::<NodeType>(),
+            input: Type::of::<Input>(),
+            output: Type::of::<Output>(),
+            error: Type::of::<Error>(),
+            context: Type::of::<Context>(),
             description: None,
             externals: None,
         }
     }
 
     #[must_use]
-    pub fn from_node<N, I, O, E, C>(_node: &N) -> Self
+    pub fn from_node<NodeType, Input, Output, Error, Context>(_node: &NodeType) -> Self
     where
-        N: Node<I, NodeOutput<O>, E, C>,
+        NodeType: Node<Input, NodeOutput<Output>, Error, Context>,
     {
-        Self::from::<N, I, O, E, C>()
+        Self::from::<NodeType, Input, Output, Error, Context>()
     }
 
     #[must_use]
