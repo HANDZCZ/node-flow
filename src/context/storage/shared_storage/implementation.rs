@@ -13,6 +13,14 @@ use crate::context::{Fork, Join, Update, storage::shared_storage::SharedStorage}
 
 type StorageItem = Arc<RwLock<Option<Box<dyn Any + Send + Sync>>>>;
 
+/// An implementation of type-based shared storage.
+///
+/// See [`SharedStorage`] for more info.\
+/// See also [`Fork`], [`Update`], [`Join`].
+///
+/// # Internal Structure
+/// Item entries are stored in `Arc<std::sync::Mutex<HashMap<TypeId, StorageItem>>>` which is cloned in [`Fork`] and shared between branches.\
+/// `StorageItem` has type `Arc<async_lock::RwLock<...>>` which allows for per entry locking without holding a lock for the entire `HashMap`.
 #[derive(Default, Clone)]
 pub struct SharedStorageImpl {
     inner: Arc<Mutex<HashMap<TypeId, StorageItem>>>,
@@ -204,6 +212,7 @@ mod guards {
 }
 
 #[cfg(test)]
+#[doc(hidden)]
 pub mod tests {
     use super::*;
 
