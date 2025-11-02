@@ -51,6 +51,14 @@ impl Clone for Box<dyn StorageItem> {
     }
 }
 
+/// An implementation of type-based local storage.
+///
+/// See [`LocalStorage`] for more info.\
+/// See also [`Fork`], [`Update`], [`Join`], [`Merge`].
+///
+/// # Internal Structure
+/// - `inner`: Stores the mapping of `TypeId` -> type-erased boxed value.
+/// - `changed`: Tracks which entries have been modified.
 #[derive(Default)]
 pub struct LocalStorageImpl {
     inner: HashMap<TypeId, Box<dyn StorageItem>>,
@@ -220,6 +228,7 @@ impl Join for LocalStorageImpl {
 }
 
 #[cfg(test)]
+#[doc(hidden)]
 pub mod tests {
     use super::*;
 
