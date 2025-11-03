@@ -28,7 +28,74 @@ define_flow_and_ioe_conv_builder!(
     >Error: Send,
     >Context: Fork + Update + Send,
     #NodeType: Send + Sync + Clone
-    /// Docs :)
+    /// `OneOfParallelFlow` executes nodes (branches) **in parallel**, returning when one succeeds or fails.
+    ///
+    /// Nodes (branches) are executed concurrently.
+    /// The flow completes when **any** node succeeds or "hard" fails.
+    /// - If a node returns [`NodeOutput::Ok`](crate::node::NodeOutput::Ok), that value is returned.
+    /// - If a node returns [`NodeOutput::SoftFail`](crate::node::NodeOutput::SoftFail),
+    ///   that result is ignored and the flow continues waiting for other nodes (branches).
+    /// - If a node returns an **error**, then that error is returned.
+    ///
+    /// If all nodes (branches) soft-fail, the flow itself returns [`NodeOutput::SoftFail`](crate::node::NodeOutput::SoftFail).
+    ///
+    /// This flow allows defining race-style execution, where multiple branches are ran in parallel
+    /// and the first one to complete determines the returned value.
+    ///
+    /// # Type Parameters
+    /// - `Input`: The type of data accepted by this flow.
+    /// - `Output`: The type of data produced by this flow.
+    /// - `Error`: The type of error emitted by this flow.
+    /// - `Context`: The type of context used during execution.
+    ///
+    /// # Examples
+    /// ```
+    /// use node_flow::node::{Node, NodeOutput};
+    /// use node_flow::flows::OneOfParallelFlow;
+    /// use node_flow::context::{Fork, Update};
+    ///
+    /// // Example nodes
+    /// #[derive(Clone)]
+    /// struct A;
+    /// #[derive(Clone)]
+    /// struct B;
+    ///
+    /// struct ExampleCtx;
+    /// impl Fork for ExampleCtx // ...
+    /// # { fn fork(&self) -> Self { Self } }
+    /// impl Update for ExampleCtx // ...
+    /// # { fn update_from(&mut self, other: Self) {} }
+    ///
+    /// impl<Ctx: Send> Node<(), NodeOutput<i32>, (), Ctx> for A {
+    ///     async fn run(&mut self, _: (), _: &mut Ctx) -> Result<NodeOutput<i32>, ()> {
+    ///         Ok(NodeOutput::SoftFail) // Ignored
+    ///     }
+    /// }
+    ///
+    /// impl<Ctx: Send> Node<(), NodeOutput<i32>, (), Ctx> for B {
+    ///     async fn run(&mut self, _: (), _: &mut Ctx) -> Result<NodeOutput<i32>, ()> {
+    ///         Ok(NodeOutput::Ok(5)) // Wins the race
+    ///     }
+    /// }
+    ///
+    /// # tokio::runtime::Builder::new_current_thread()
+    /// #     .enable_all()
+    /// #     .build()
+    /// #     .unwrap()
+    /// #     .block_on(async {
+    /// async fn main() {
+    ///     let mut flow = OneOfParallelFlow::<(), i32, (), _>::builder()
+    ///         .add_node(A)
+    ///         .add_node(B)
+    ///         .build();
+    ///
+    ///     let mut ctx = ExampleCtx;
+    ///     let result = flow.run((), &mut ctx).await;
+    ///     assert_eq!(result, Ok(NodeOutput::Ok(5)));
+    /// }
+    /// # main().await;
+    /// # });
+    /// ```
 );
 
 #[cfg(test)]
