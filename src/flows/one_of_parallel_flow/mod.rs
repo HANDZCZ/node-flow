@@ -1,6 +1,7 @@
 mod chain_run;
 
 use crate::{
+    context::{Fork, Update},
     describe::{Description, Edge, remove_generics_from_name},
     flows::{chain_describe::ChainDescribe, generic_defs::define_flow_and_ioe_conv_builder},
     node::NodeOutput as NodeOutputStruct,
@@ -25,6 +26,7 @@ define_flow_and_ioe_conv_builder!(
     >Input: Send + Clone,
     >Output: Send,
     >Error: Send,
+    >Context: Fork + Update + Send,
     #NodeType: Send + Sync + Clone
     /// Docs :)
 );

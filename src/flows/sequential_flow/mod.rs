@@ -27,6 +27,7 @@ define_flow!(
     },
     Input: Send,
     Error: Send,
+    Context: Send,
     /// Docs :)
 );
 

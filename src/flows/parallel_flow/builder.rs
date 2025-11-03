@@ -2,6 +2,7 @@ use std::{marker::PhantomData, sync::Arc};
 
 use super::ParallelFlow as Flow;
 use crate::{
+    context::{Fork, Join},
     flows::{
         ChainLink, NodeIOE,
         generic_defs::debug::impl_debug_for_builder,
@@ -15,6 +16,7 @@ where
     // Trait bounds for better and nicer errors
     Input: Send + Clone,
     Error: Send,
+    Context: Fork + Join + Send,
 {
     #[expect(clippy::type_complexity)]
     _ioec: PhantomData<fn() -> (Input, Output, Error, Context)>,
@@ -26,7 +28,8 @@ impl_debug_for_builder!(
     "ParallelFlow",
     Builder,
     Input: Send + Clone,
-    Error: Send
+    Error: Send,
+    Context: Fork + Join + Send
 );
 
 impl<Input, Output, Error, Context> Default for Builder<Input, Output, Error, Context>
@@ -34,6 +37,7 @@ where
     // Trait bounds for better and nicer errors
     Input: Send + Clone,
     Error: Send,
+    Context: Fork + Join + Send,
 {
     fn default() -> Self {
         Self::new()
@@ -45,6 +49,7 @@ where
     // Trait bounds for better and nicer errors
     Input: Send + Clone,
     Error: Send,
+    Context: Fork + Join + Send,
 {
     #[must_use]
     pub fn new() -> Self {
@@ -96,7 +101,7 @@ where
     // Trait bounds for better and nicer errors
     Input: Send + Clone,
     Error: Send,
-    Context: Send,
+    Context: Fork + Join + Send,
 {
     #[expect(clippy::type_complexity, clippy::type_repetition_in_bounds)]
     pub fn add_node<NodeType, NodeInput, NodeOutput, NodeError>(

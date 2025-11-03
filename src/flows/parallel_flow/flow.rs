@@ -3,6 +3,7 @@ use std::fmt::Debug;
 use super::Builder;
 use super::chain_run::ChainRunParallel as ChainRun;
 use crate::{
+    context::{Fork, Join},
     describe::{Description, DescriptionBase, Edge, Type, remove_generics_from_name},
     flows::{
         NodeResult, chain_debug::ChainDebug, chain_describe::ChainDescribe, parallel_flow::Joiner,
@@ -33,6 +34,7 @@ where
     // Trait bounds for better and nicer errors
     Input: Send + Clone,
     Error: Send,
+    Context: Fork + Join + Send,
 {
     #[must_use]
     pub fn builder() -> Builder<Input, Output, Error, Context> {

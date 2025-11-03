@@ -11,6 +11,7 @@ where
     // Trait bounds for better and nicer errors
     Input: Send,
     Error: Send,
+    Context: Send,
 {
     #[expect(clippy::type_complexity)]
     _ioec: PhantomData<fn() -> (Input, Output, Error, Context)>,
@@ -22,7 +23,8 @@ impl_debug_for_builder!(
     "SequentialFlow",
     Builder,
     Input: Send,
-    Error: Send
+    Error: Send,
+    Context: Send
 );
 
 impl<Input, Output, Error, Context> Default for Builder<Input, Output, Error, Context>
@@ -42,6 +44,7 @@ where
     // Trait bounds for better and nicer errors
     Input: Send,
     Error: Send,
+    Context: Send,
 {
     #[must_use]
     pub fn new() -> Self {
@@ -103,6 +106,7 @@ where
     // Trait bounds for better and nicer errors
     Input: Send,
     Error: Send,
+    Context: Send,
 {
     #[expect(clippy::type_complexity, clippy::type_repetition_in_bounds)]
     pub fn add_node<NodeType, NodeInput, NodeOutput, NodeError>(
