@@ -6,7 +6,15 @@ pub use flow::*;
 use crate::flows::NodeResult;
 mod chain_run;
 
+/// The `Joiner` handles the output of all nodes from [`ParallelFlow`].
+///
+/// `Joiner`s job is to handle the output of all nodes from [`ParallelFlow`]
+/// and decide how to handle it.
+/// At the end it should return an output that can be directly returned by [`ParallelFlow`].
+///
+/// See also [`ParallelFlow`].
 pub trait Joiner<'a, Input, Output, Error, Context>: Send + Sync {
+    /// Handles the output of all nodes from [`ParallelFlow`].
     fn join(
         &self,
         input: Input,

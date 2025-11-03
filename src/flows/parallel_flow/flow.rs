@@ -11,6 +11,75 @@ use crate::{
     node::{Node, NodeOutput as NodeOutputStruct},
 };
 
+/// `ParallelFlow` executes nodes (branches) **in parallel**.
+///
+/// Nodes (branches) are executed concurrently.
+/// The flow completes when **all** node succeed or **any** node "hard" fails.
+/// - If a node returns [`NodeOutput::Ok`](crate::node::NodeOutput::Ok) or [`NodeOutput::SoftFail`](crate::node::NodeOutput::SoftFail),
+///   the flow continues waiting for other nodes (branches).
+/// - If a node returns an **error**, then that error is returned.
+///
+/// The output of all nodes is then passed into a [`Joiner`],
+/// which decides what should happen and what should this flow return.
+///
+/// # Type Parameters
+/// - `Input`: The type of data accepted by this flow.
+/// - `Output`: The type of data produced by this flow.
+/// - `Error`: The type of error emitted by this flow.
+/// - `Context`: The type of context used during execution.
+///
+/// See also [`Joiner`].
+///
+/// # Examples
+/// ```
+/// use node_flow::node::{Node, NodeOutput};
+/// use node_flow::flows::ParallelFlow;
+/// use node_flow::context::{Fork, Join};
+///
+/// // Example nodes
+/// #[derive(Clone)]
+/// struct A;
+/// #[derive(Clone)]
+/// struct B;
+///
+/// struct ExampleCtx;
+/// impl Fork for ExampleCtx // ...
+/// # { fn fork(&self) -> Self { Self } }
+/// impl Join for ExampleCtx // ...
+/// # { fn join(&mut self, others: Box<[Self]>) {} }
+///
+/// impl<Ctx: Send> Node<(), NodeOutput<i32>, (), Ctx> for A {
+///     async fn run(&mut self, _: (), _: &mut Ctx) -> Result<NodeOutput<i32>, ()> {
+///         Ok(NodeOutput::SoftFail)
+///     }
+/// }
+///
+/// impl<Ctx: Send> Node<(), NodeOutput<i32>, (), Ctx> for B {
+///     async fn run(&mut self, _: (), _: &mut Ctx) -> Result<NodeOutput<i32>, ()> {
+///         Ok(NodeOutput::Ok(5))
+///     }
+/// }
+///
+/// # tokio::runtime::Builder::new_current_thread()
+/// #     .enable_all()
+/// #     .build()
+/// #     .unwrap()
+/// #     .block_on(async {
+/// async fn main() {
+///     let mut flow = ParallelFlow::<(), i32, (), _>::builder()
+///         .add_node(A)
+///         .add_node(B)
+///         .build(async |_input, context: &mut ExampleCtx| {
+///             Ok(NodeOutput::Ok(120))
+///         });
+///
+///     let mut ctx = ExampleCtx;
+///     let result = flow.run((), &mut ctx).await;
+///     assert_eq!(result, Ok(NodeOutput::Ok(120)));
+/// }
+/// # main().await;
+/// # });
+/// ```
 pub struct ParallelFlow<
     Input,
     Output,
@@ -36,6 +105,21 @@ where
     Error: Send,
     Context: Fork + Join + Send,
 {
+    /// Creates a new [`Builder`] for constructing [`ParallelFlow`].
+    ///
+    /// See also [`ParallelFlow`].
+    ///
+    /// # Examples
+    /// ```
+    /// # use node_flow::context::{Fork, Join};
+    /// # struct Ctx;
+    /// # impl Fork for Ctx { fn fork(&self) -> Self { Self } }
+    /// # impl Join for Ctx { fn join(&mut self, other: Box<[Self]>) {} }
+    /// #
+    /// use node_flow::flows::ParallelFlow;
+    ///
+    /// let builder = ParallelFlow::<u8, u16, (), Ctx>::builder();
+    /// ```
     #[must_use]
     pub fn builder() -> Builder<Input, Output, Error, Context> {
         Builder::new()
