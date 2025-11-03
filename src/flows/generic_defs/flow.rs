@@ -30,6 +30,21 @@ macro_rules! define_flow {
             // Trait bounds for better and nicer errors
             $($param: $bound0 $(+$bound)*,)*
         {
+            #[doc = concat!("Creates a new [`", stringify!($builder), "`] for constructing [`", stringify!($flow_name), "`].")]
+            ///
+            #[doc = concat!("See also [`", stringify!($flow_name), "`].")]
+            ///
+            /// # Examples
+            /// ```
+            /// # use node_flow::context::{Fork, Update};
+            /// # struct Ctx;
+            /// # impl Fork for Ctx { fn fork(&self) -> Self { Self } }
+            /// # impl Update for Ctx { fn update_from(&mut self, other: Self) {} }
+            /// #
+            #[doc = concat!("use node_flow::flows::", stringify!($flow_name), ";")]
+            ///
+            #[doc = concat!("let builder = ", stringify!($flow_name), "::<u8, u16, (), Ctx>::builder();")]
+            /// ```
             #[must_use]
             pub fn builder() -> $builder<Input, Output, Error, Context> {
                 $builder::new()

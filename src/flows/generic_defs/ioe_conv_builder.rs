@@ -5,7 +5,14 @@
 /// - `NodeError: Into<Error>`
 macro_rules! define_builder {
     ($flow_type:ident $(,>$global_param:ident: $global_bound0:ident $(+$global_bound:ident)*)* $(,#$fn_param:ident: $fn_bound0:ident $(+$fn_bound:ident)*)*) => {
-        #[doc = concat!("Builder for [`", stringify!($flow_type), "`]")]
+        #[doc = concat!("Builder for [`", stringify!($flow_type), "`].")]
+        ///
+        /// This builder ensures:
+        /// - `Input` into the flow can be converted into the input of all nodes
+        /// - output of all nodes can be converted into the `Output` of the flow
+        /// - error of all nodes can be converted into the `Error` of the flow
+        ///
+        #[doc = concat!("See also [`", stringify!($flow_type), "`].")]
         pub struct Builder<Input, Output, Error, Context, NodeTypes = (), NodeIOETypes = ()>
         where
             // Trait bounds for better and nicer errors
@@ -16,7 +23,7 @@ macro_rules! define_builder {
             nodes: NodeTypes,
         }
 
-        $crate::flows::generic_defs::debug::impl_debug_for_builder!(stringify!($flow_name), Builder $(,$global_param: $global_bound0 $(+$global_bound)*)*);
+        $crate::flows::generic_defs::debug::impl_debug_for_builder!(stringify!($flow_type), Builder $(,$global_param: $global_bound0 $(+$global_bound)*)*);
 
         impl<Input, Output, Error, Context> Default for Builder<Input, Output, Error, Context>
         where
@@ -33,6 +40,7 @@ macro_rules! define_builder {
             // Trait bounds for better and nicer errors
             $($global_param: $global_bound0 $(+$global_bound)*,)*
         {
+            #[doc = concat!("Creates a new empty builder for [`", stringify!($flow_type), "`].")]
             #[must_use]
             pub fn new() -> Self {
                 Self {
@@ -42,6 +50,16 @@ macro_rules! define_builder {
                 }
             }
 
+            /// Adds a new node.
+            ///
+            /// The new node must satisfy:
+            /// - `Self`: `Node<NodeInputType, NodeOutput<NodeOutputType>, NodeErrorType, _>`
+            /// - `Input`: `Into<NodeInputType>`,
+            /// - `NodeOutputType`: `Into<Output>`,
+            /// - `NodeErrorType`: `Into<Error>`,
+            ///
+            /// # Returns
+            /// A new [`Builder`] with the added node.
             pub fn add_node<NodeType, NodeInput, NodeOutput, NodeError>(
                 self,
                 node: NodeType,
@@ -86,6 +104,16 @@ macro_rules! define_builder {
             // Trait bounds for better and nicer errors
             $($global_param: $global_bound0 $(+$global_bound)*,)*
         {
+            /// Adds a new node.
+            ///
+            /// The new node must satisfy:
+            /// - `Self`: `Node<NodeInputType, NodeOutput<NodeOutputType>, NodeErrorType, _>`
+            /// - `Input`: `Into<NodeInputType>`,
+            /// - `NodeOutputType`: `Into<Output>`,
+            /// - `NodeErrorType`: `Into<Error>`,
+            ///
+            /// # Returns
+            /// A new [`Builder`] with the added node.
             pub fn add_node<NodeType, NodeInput, NodeOutput, NodeError>(
                 self,
                 node: NodeType,
@@ -116,6 +144,7 @@ macro_rules! define_builder {
                 }
             }
 
+            #[doc = concat!("Finalizes the builder and produces a [`", stringify!($flow_type), "`] instance.")]
             pub fn build(
                 self,
             ) -> $flow_type<
