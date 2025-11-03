@@ -6,6 +6,15 @@ use crate::{
     node::{Node, NodeOutput as NodeOutputStruct},
 };
 
+/// Builder for [`SequentialFlow`](Flow).
+///
+/// This builder ensures:
+/// - `Input` into the flow can be converted into the input of the first node
+/// - output of the last node can be converted into the `Output` of the flow
+/// - error of all nodes can be converted into the `Error` of the flow
+/// - output of a previous node can be converted into the input of the next node
+///
+/// See also [`SequentialFlow`](Flow).
 pub struct Builder<Input, Output, Error, Context, NodeTypes = (), NodeIOETypes = ()>
 where
     // Trait bounds for better and nicer errors
@@ -46,6 +55,7 @@ where
     Error: Send,
     Context: Send,
 {
+    /// Creates a new empty builder for [`SequentialFlow`](Flow).
     #[must_use]
     pub fn new() -> Self {
         Self {
@@ -55,6 +65,15 @@ where
         }
     }
 
+    /// Adds a new node.
+    ///
+    /// The new node must satisfy:
+    /// - `Self`: `Node<NodeInputType, NodeOutput<NodeOutputType>, NodeErrorType, _>`
+    /// - `Input`: `Into<NodeInputType>`,
+    /// - `NodeErrorType`: `Into<Error>`,
+    ///
+    /// # Returns
+    /// A new [`Builder`] with the added node.
     #[expect(clippy::type_complexity, clippy::type_repetition_in_bounds)]
     pub fn add_node<NodeType, NodeInput, NodeOutput, NodeError>(
         self,
@@ -108,6 +127,15 @@ where
     Error: Send,
     Context: Send,
 {
+    /// Adds a new node.
+    ///
+    /// The new node must satisfy:
+    /// - `Self`: `Node<NodeInputType, NodeOutput<NodeOutputType>, NodeErrorType, _>`
+    /// - `NodeErrorType`: `Into<Error>`,
+    /// - `LastNodeOutputType`: `Into<NodeInputType>`,
+    ///
+    /// # Returns
+    /// A new [`Builder`] with the added node.
     #[expect(clippy::type_complexity, clippy::type_repetition_in_bounds)]
     pub fn add_node<NodeType, NodeInput, NodeOutput, NodeError>(
         self,
@@ -138,6 +166,7 @@ where
         }
     }
 
+    /// Finalizes the builder and produces a [`SequentialFlow`](Flow) instance.
     #[expect(clippy::type_complexity)]
     pub fn build(
         self,

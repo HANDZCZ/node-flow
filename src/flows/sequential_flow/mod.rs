@@ -28,7 +28,58 @@ define_flow!(
     Input: Send,
     Error: Send,
     Context: Send,
-    /// Docs :)
+    /// `SequentialFlow` executes nodes **sequentially**, like a pipeline.
+    ///
+    /// Nodes are executed sequentially like a pipeline where
+    /// the output of one node is used as in input of the next node.
+    /// Nodes are executed in order of insertion until **all** succeed or **any** node "hard" fails.
+    ///
+    /// - If a node returns [`NodeOutput::Ok`](crate::node::NodeOutput::Ok), that value is then fed into the next node.
+    /// - If a node returns [`NodeOutput::SoftFail`](crate::node::NodeOutput::SoftFail), the flow soft-fails.
+    /// - If a node returns an **error**, then that error is returned.
+    ///
+    /// # Type Parameters
+    /// - `Input`: The type of data accepted by this flow.
+    /// - `Output`: The type of data produced by this flow.
+    /// - `Error`: The type of error emitted by this flow.
+    /// - `Context`: The type of context used during execution.
+    ///
+    /// # Examples
+    /// ```
+    /// use node_flow::node::{Node, NodeOutput};
+    /// use node_flow::flows::SequentialFlow;
+    ///
+    /// // Example node
+    /// #[derive(Clone)]
+    /// struct AddOne;
+    ///
+    /// struct ExampleCtx;
+    ///
+    /// impl<Ctx: Send> Node<u8, NodeOutput<u8>, (), Ctx> for AddOne {
+    ///     async fn run(&mut self, input: u8, _: &mut Ctx) -> Result<NodeOutput<u8>, ()> {
+    ///         Ok(NodeOutput::Ok(input + 1))
+    ///     }
+    /// }
+    ///
+    /// # tokio::runtime::Builder::new_current_thread()
+    /// #     .enable_all()
+    /// #     .build()
+    /// #     .unwrap()
+    /// #     .block_on(async {
+    /// async fn main() {
+    ///     let mut flow = SequentialFlow::<u8, u8, (), _>::builder()
+    ///         .add_node(AddOne)
+    ///         .add_node(AddOne)
+    ///         .add_node(AddOne)
+    ///         .build();
+    ///
+    ///     let mut ctx = ExampleCtx;
+    ///     let result = flow.run(5u8, &mut ctx).await;
+    ///     assert_eq!(result, Ok(NodeOutput::Ok(8)));
+    /// }
+    /// # main().await;
+    /// # });
+    /// ```
 );
 
 #[cfg(test)]
