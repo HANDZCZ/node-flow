@@ -23,7 +23,72 @@ define_flow_and_ioe_conv_builder!(
     >Input: Send + Clone,
     >Context: Fork + Update + Send,
     #NodeType: Send + Sync + Clone
-    /// Docs :)
+    /// `OneOfSequentialFlow` executes nodes (branches) **sequentially**, returning when one succeeds or fails.
+    ///
+    /// Nodes (branches) are executed sequentially in order of insertion until **one** succeeds or "hard" fails.
+    /// - If a node returns [`NodeOutput::Ok`](crate::node::NodeOutput::Ok), that value is returned.
+    /// - If a node returns [`NodeOutput::SoftFail`](crate::node::NodeOutput::SoftFail), the flow continues onto the next node (branch).
+    /// - If a node returns an **error**, then that error is returned.
+    ///
+    /// If all nodes (branches) soft-fail, the flow itself returns [`NodeOutput::SoftFail`](crate::node::NodeOutput::SoftFail).
+    ///
+    /// This flow allows for defining fallback-style chain, where multiple nodes are tried
+    /// in sequence until one handles the input successfully.
+    ///
+    /// # Type Parameters
+    /// - `Input`: The type of data accepted by this flow.
+    /// - `Output`: The type of data produced by this flow.
+    /// - `Error`: The type of error emitted by this flow.
+    /// - `Context`: The type of context used during execution.
+    ///
+    /// # Examples
+    /// ```
+    /// use node_flow::node::{Node, NodeOutput};
+    /// use node_flow::flows::OneOfSequentialFlow;
+    /// use node_flow::context::{Fork, Update};
+    ///
+    /// // Example nodes
+    /// #[derive(Clone)]
+    /// struct A;
+    /// #[derive(Clone)]
+    /// struct B;
+    ///
+    /// struct ExampleCtx;
+    /// impl Fork for ExampleCtx // ...
+    /// # { fn fork(&self) -> Self { Self } }
+    /// impl Update for ExampleCtx // ...
+    /// # { fn update_from(&mut self, other: Self) {} }
+    ///
+    /// impl<Ctx: Send> Node<(), NodeOutput<i32>, (), Ctx> for A {
+    ///     async fn run(&mut self, _: (), _: &mut Ctx) -> Result<NodeOutput<i32>, ()> {
+    ///         Ok(NodeOutput::SoftFail) // Try next
+    ///     }
+    /// }
+    ///
+    /// impl<Ctx: Send> Node<(), NodeOutput<i32>, (), Ctx> for B {
+    ///     async fn run(&mut self, _: (), _: &mut Ctx) -> Result<NodeOutput<i32>, ()> {
+    ///         Ok(NodeOutput::Ok(5)) // Succeeds
+    ///     }
+    /// }
+    ///
+    /// # tokio::runtime::Builder::new_current_thread()
+    /// #     .enable_all()
+    /// #     .build()
+    /// #     .unwrap()
+    /// #     .block_on(async {
+    /// async fn main() {
+    ///     let mut flow = OneOfSequentialFlow::<(), i32, (), _>::builder()
+    ///         .add_node(A)
+    ///         .add_node(B)
+    ///         .build();
+    ///
+    ///     let mut ctx = ExampleCtx;
+    ///     let result = flow.run((), &mut ctx).await;
+    ///     assert_eq!(result, Ok(NodeOutput::Ok(5)));
+    /// }
+    /// # main().await;
+    /// # });
+    /// ```
 );
 
 #[cfg(test)]
