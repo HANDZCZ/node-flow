@@ -7,6 +7,80 @@ use crate::{
     node::{Node, NodeOutput as NodeOutputStruct},
 };
 
+/// `Detached` executes a node **asynchronously and independently** of the main flow.
+///
+/// The node is executed in a **detached task** using the [`SpawnAsync`]
+/// context trait and any result or error from the detached node is ignored.
+///
+/// This flow is useful for side-effect operations such as logging, analytics, or background
+/// triggers that should not block or influence the main execution path.
+///
+/// # Type Parameters
+/// - `Input`: The type of data **accepted and produced** by this flow.
+/// - `Error`: The type of error emitted by this flow.
+/// - `Context`: The type of context used during execution.
+///
+/// # Examples
+/// ```
+/// use node_flow::node::{Node, NodeOutput};
+/// use node_flow::context::{SpawnAsync, Fork};
+/// # use node_flow::context::Task;
+/// use node_flow::flows::Detached;
+/// use std::future::Future;
+///
+/// #[derive(Clone)]
+/// struct PrintNode;
+///
+/// struct ExampleCtx;
+/// impl Fork for ExampleCtx // ...
+/// # { fn fork(&self) -> Self { Self } }
+/// impl SpawnAsync for ExampleCtx // ...
+/// # {
+/// #    fn spawn<F>(fut: F) -> impl Task<F::Output>
+/// #     where
+/// #         F: Future + Send + 'static,
+/// #         F::Output: Send + 'static,
+/// #     {
+/// #         DummyTask(std::marker::PhantomData)
+/// #     }
+/// # }
+/// # struct DummyTask<T>(std::marker::PhantomData<T>);
+/// # impl<T> Future for DummyTask<T> {
+/// #     type Output = T;
+/// #     fn poll(
+/// #         self: std::pin::Pin<&mut Self>,
+/// #         _: &mut std::task::Context<'_>
+/// #     ) -> std::task::Poll<Self::Output> {
+/// #         std::task::Poll::Pending
+/// #     }
+/// # }
+/// # impl<T> Task<T> for DummyTask<T> {
+/// #     fn is_finished(&self) -> bool { false }
+/// #     fn cancel(self) {}
+/// # }
+///
+/// impl<Ctx: Send> Node<u8, NodeOutput<()>, (), Ctx> for PrintNode {
+///     async fn run(&mut self, input: u8, _: &mut Ctx) -> Result<NodeOutput<()>, ()> {
+///         println!("Running detached task with input: {input}");
+///         Ok(NodeOutput::Ok(()))
+///     }
+/// }
+///
+/// # tokio::runtime::Builder::new_current_thread()
+/// #     .enable_all()
+/// #     .build()
+/// #     .unwrap()
+/// #     .block_on(async {
+/// async fn main() {
+///     let mut detached = Detached::<u8, (), _>::new(PrintNode);
+///
+///     let mut ctx = ExampleCtx;
+///     let result = detached.run(7, &mut ctx).await;
+///     assert_eq!(result, Ok(NodeOutput::Ok(7)));
+/// }
+/// # main().await;
+/// # });
+/// ```
 pub struct Detached<Input, Error, Context, NodeType = (), NodeOutput = (), NodeError = ()> {
     #[expect(clippy::type_complexity)]
     _iec: std::marker::PhantomData<fn() -> (Input, Error, Context)>,
@@ -15,6 +89,55 @@ pub struct Detached<Input, Error, Context, NodeType = (), NodeOutput = (), NodeE
 }
 
 impl<Input, Error, Context> Detached<Input, Error, Context> {
+    /// Creates a new [`Detached`] flow by wrapping the given node.
+    ///
+    /// See also [`Detached`].
+    ///
+    /// # Examples
+    /// ```
+    /// use node_flow::flows::Detached;
+    /// use node_flow::node::{Node, NodeOutput};
+    /// # use node_flow::context::{SpawnAsync, Fork};
+    /// # use node_flow::context::Task;
+    /// # use std::future::Future;
+    ///
+    /// #[derive(Clone)]
+    /// struct BackgroundTask;
+    /// impl<Ctx: Send> Node<(), NodeOutput<()>, (), Ctx> for BackgroundTask // ...
+    /// # {
+    /// #     async fn run(&mut self, _: (), _: &mut Ctx) -> Result<NodeOutput<()>, ()> {
+    /// #         todo!()
+    /// #     }
+    /// # }
+    /// # struct Ctx;
+    /// # impl Fork for Ctx { fn fork(&self) -> Self { Self } }
+    /// # impl SpawnAsync for Ctx {
+    /// #    fn spawn<F>(fut: F) -> impl Task<F::Output>
+    /// #     where
+    /// #         F: Future + Send + 'static,
+    /// #         F::Output: Send + 'static,
+    /// #     {
+    /// #         DummyTask(std::marker::PhantomData)
+    /// #     }
+    /// # }
+    /// # struct DummyTask<T>(std::marker::PhantomData<T>);
+    /// # impl<T> Future for DummyTask<T> // ...
+    /// # {
+    /// #     type Output = T;
+    /// #     fn poll(
+    /// #         self: std::pin::Pin<&mut Self>,
+    /// #         _: &mut std::task::Context<'_>
+    /// #     ) -> std::task::Poll<Self::Output> {
+    /// #         std::task::Poll::Pending
+    /// #     }
+    /// # }
+    /// # impl<T> Task<T> for DummyTask<T> {
+    /// #     fn is_finished(&self) -> bool { false }
+    /// #     fn cancel(self) {}
+    /// # }
+    ///
+    /// let detached = Detached::<(), (), Ctx>::new(BackgroundTask);
+    /// ```
     #[expect(clippy::type_repetition_in_bounds)]
     pub fn new<NodeType, NodeOutput, NodeError>(
         node: NodeType,

@@ -11,7 +11,7 @@ pub mod parallel_flow;
 pub use parallel_flow::ParallelFlow;
 pub mod fn_flow;
 pub use fn_flow::FnFlow;
-mod detached;
+pub mod detached;
 pub use detached::Detached;
 
 use crate::node::NodeOutput;
