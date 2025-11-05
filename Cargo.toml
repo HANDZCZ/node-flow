@@ -1,9 +1,9 @@
 [package]
 name = "node-flow"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 repository = "https://github.com/HANDZCZ/node-flow"
-description = "A crate that provides flows for nodes"
+description = "Runtime-agnostic, asynchronous node-based framework for building composable flows"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
@@ -24,3 +24,6 @@ shared_storage_impl = ["dep:async-lock"]
 describe_get_name_simple = ["dep:tynm"]
 d2describer = ["describe_get_name_simple", "dep:rand"]
 boxed_node = ["dep:async-trait"]
+
+[package.metadata.docs.rs]
+all-features = true
