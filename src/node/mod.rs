@@ -1,3 +1,7 @@
+//! This module contains the [`Node`] trait and everything related to it.
+//!
+//! For details, see the documentation of each item.
+
 mod base;
 pub use base::*;
 mod output;

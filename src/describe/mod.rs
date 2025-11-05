@@ -1,3 +1,9 @@
+//! This module contains all the necessary components for describing the structure of a flow.
+//!
+//! It also contains a [`D2Describer`] for formatting [`Description`] into [D2](https://d2lang.com/) graph syntax.
+//!
+//! For details, see the documentation of [`Description`].
+
 mod design;
 pub use design::*;
 
