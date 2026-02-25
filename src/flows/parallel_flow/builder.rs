@@ -1,4 +1,4 @@
-use std::{marker::PhantomData, sync::Arc};
+use std::marker::PhantomData;
 
 use super::ParallelFlow as Flow;
 use crate::{
@@ -224,7 +224,7 @@ where
         Flow {
             _ioec: PhantomData,
             _nodes_io: PhantomData,
-            nodes: Arc::new(self.nodes),
+            nodes: self.nodes,
             _joiner_input: PhantomData,
             joiner,
         }

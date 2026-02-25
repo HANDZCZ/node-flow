@@ -8,13 +8,15 @@ macro_rules! define_flow {
         pub struct $flow_name<Input, Output, Error, Context, NodeTypes = (), NodeIOETypes = ()> {
             pub(super) _ioec: std::marker::PhantomData<fn() -> (Input, Output, Error, Context)>,
             pub(super) _nodes_io: std::marker::PhantomData<fn() -> NodeIOETypes>,
-            pub(super) nodes: std::sync::Arc<NodeTypes>,
+            pub(super) nodes: NodeTypes,
         }
 
         $crate::flows::generic_defs::debug::impl_debug_for_flow!(stringify!($flow_name), $flow_name);
 
         impl<Input, Output, Error, Context, NodeTypes, NodeIOETypes> Clone
             for $flow_name<Input, Output, Error, Context, NodeTypes, NodeIOETypes>
+        where
+            NodeTypes: Clone,
         {
             fn clone(&self) -> Self {
                 Self {
@@ -63,10 +65,10 @@ macro_rules! define_flow {
                 input: Input,
                 context: &mut Context,
             ) -> impl Future<Output = $crate::flows::NodeResult<Output, Error>> + Send {
-                $chain_run::run(self.nodes.as_ref(), input, context)
+                $chain_run::run(&self.nodes, input, context)
             }
 
-            fn describe(& $self) -> $crate::describe::Description {
+            fn describe(&$self) -> $crate::describe::Description {
                 $describe_code
             }
         }

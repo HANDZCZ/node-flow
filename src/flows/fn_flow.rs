@@ -87,8 +87,8 @@ where
 pub struct FnFlow<Input, Output, Error, Context, InnerData = (), R = ()> {
     #[expect(clippy::type_complexity)]
     _ioec: std::marker::PhantomData<fn() -> (Input, Output, Error, Context)>,
-    inner_data: std::sync::Arc<InnerData>,
-    runner_description: Option<std::sync::Arc<Description>>,
+    inner_data: InnerData,
+    runner_description: Option<Description>,
     runner: R,
 }
 impl<Input, Output, Error, Context> FnFlow<Input, Output, Error, Context>
@@ -150,7 +150,7 @@ where
     {
         FnFlow {
             _ioec: std::marker::PhantomData,
-            inner_data: std::sync::Arc::new(inner_data),
+            inner_data,
             runner_description: None,
             runner,
         }
@@ -179,7 +179,7 @@ impl<Input, Output, Error, Context, InnerData, R>
     /// ```
     #[must_use]
     pub fn with_description(mut self, description: Description) -> Self {
-        self.runner_description = Some(std::sync::Arc::new(description));
+        self.runner_description = Some(description);
         self
     }
 }
@@ -200,6 +200,7 @@ impl<Input, Output, Error, Context, InnerData, R> Clone
     for FnFlow<Input, Output, Error, Context, InnerData, R>
 where
     R: Clone,
+    InnerData: Clone,
 {
     fn clone(&self) -> Self {
         Self {
@@ -222,13 +223,12 @@ where
         input: Input,
         context: &mut Context,
     ) -> impl Future<Output = Result<NodeOutput<Output>, Error>> + Send {
-        self.runner
-            .run(self.inner_data.as_ref().clone(), input, context)
+        self.runner.run(self.inner_data.clone(), input, context)
     }
 
     fn describe(&self) -> crate::describe::Description {
         if let Some(desc) = self.runner_description.as_ref() {
-            return desc.as_ref().clone();
+            return desc.clone();
         }
 
         let runner = Description::Node {

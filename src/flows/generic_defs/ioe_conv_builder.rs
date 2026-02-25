@@ -158,7 +158,7 @@ macro_rules! define_builder {
                 $flow_type {
                     _ioec: std::marker::PhantomData,
                     _nodes_io: std::marker::PhantomData,
-                    nodes: std::sync::Arc::new(self.nodes),
+                    nodes: self.nodes,
                 }
             }
         }

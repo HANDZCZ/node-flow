@@ -93,7 +93,7 @@ pub struct ParallelFlow<
     #[expect(clippy::type_complexity)]
     pub(super) _ioec: std::marker::PhantomData<fn() -> (Input, Output, Error, Context)>,
     pub(super) _nodes_io: std::marker::PhantomData<fn() -> NodeIOETypes>,
-    pub(super) nodes: std::sync::Arc<NodeTypes>,
+    pub(super) nodes: NodeTypes,
     pub(super) _joiner_input: std::marker::PhantomData<fn() -> ChainOutput>,
     pub(super) joiner: Joiner,
 }
@@ -130,6 +130,7 @@ impl<Input, Output, Error, Context, ChainRunOutput, J, NodeTypes, NodeIOETypes> 
     for ParallelFlow<Input, Output, Error, Context, ChainRunOutput, J, NodeTypes, NodeIOETypes>
 where
     J: Clone,
+    NodeTypes: Clone,
 {
     fn clone(&self) -> Self {
         Self {
@@ -185,7 +186,7 @@ where
         input: Input,
         context: &mut Context,
     ) -> impl Future<Output = NodeResult<Output, Error>> + Send {
-        let nodes = self.nodes.as_ref();
+        let nodes = &self.nodes;
         let joiner = &self.joiner;
         async move {
             let fut = nodes.run(input, context);

@@ -1,4 +1,4 @@
-use std::{marker::PhantomData, sync::Arc};
+use std::marker::PhantomData;
 
 use super::SequentialFlow as Flow;
 use crate::{
@@ -184,7 +184,7 @@ where
         Flow {
             _ioec: PhantomData,
             _nodes_io: PhantomData,
-            nodes: Arc::new(self.nodes),
+            nodes: self.nodes,
         }
     }
 }

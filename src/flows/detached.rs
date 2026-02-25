@@ -85,7 +85,7 @@ pub struct Detached<Input, Error, Context, NodeType = (), NodeOutput = (), NodeE
     #[expect(clippy::type_complexity)]
     _iec: std::marker::PhantomData<fn() -> (Input, Error, Context)>,
     _node_oe: std::marker::PhantomData<fn() -> (NodeOutput, NodeError)>,
-    node: std::sync::Arc<NodeType>,
+    node: NodeType,
 }
 
 impl<Input, Error, Context> Detached<Input, Error, Context> {
@@ -151,7 +151,7 @@ impl<Input, Error, Context> Detached<Input, Error, Context> {
         Detached {
             _iec: std::marker::PhantomData,
             _node_oe: std::marker::PhantomData,
-            node: std::sync::Arc::new(node),
+            node,
         }
     }
 }
@@ -170,6 +170,8 @@ where
 
 impl<Input, Error, Context, NodeType, NodeOutput, NodeError> Clone
     for Detached<Input, Error, Context, NodeType, NodeOutput, NodeError>
+where
+    NodeType: Clone,
 {
     fn clone(&self) -> Self {
         Self {
@@ -194,7 +196,7 @@ where
         context: &mut Context,
     ) -> impl Future<Output = NodeResult<Input, Error>> + Send {
         let _task = Context::spawn({
-            let mut node = self.node.as_ref().clone();
+            let mut node = self.node.clone();
             let input = input.clone();
             let mut context = context.fork();
             async move {
