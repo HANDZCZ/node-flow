@@ -20,7 +20,7 @@ pub enum Description {
         /// The base description containing type information and metadata.
         base: DescriptionBase,
         /// The collection of node descriptions that make up this flow.
-        nodes: Vec<Description>,
+        nodes: Vec<Self>,
         /// The connections between nodes within this flow.
         edges: Vec<Edge>,
     },

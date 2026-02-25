@@ -21,7 +21,6 @@ use std::ops::{Deref, DerefMut};
 ///
 /// # Examples
 /// ```
-/// use std::sync::{Arc, RwLock};
 /// use std::future::Future;
 /// use std::ops::{Deref, DerefMut};
 /// use node_flow::context::storage::SharedStorage;
